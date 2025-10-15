@@ -1,0 +1,22 @@
+.application-settings {
+  padding: 20px;
+}
+
+.settings-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.settings-content h2 {
+  font-size: 28px;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.settings-content p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.5;
+}
