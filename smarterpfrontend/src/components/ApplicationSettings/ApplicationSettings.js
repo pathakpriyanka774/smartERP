@@ -8,6 +8,7 @@ import ApiManager from './ApiManager';
 import Permissions from './Permissions';
 import Roles from './Roles';
 import Templates from './Templates';
+import ChartBuilder from './ChartBuilder';
 
 const ApplicationSettings = ({ activeSection }) => {
   const renderContent = () => {
@@ -28,6 +29,8 @@ const ApplicationSettings = ({ activeSection }) => {
         return <Roles />;
       case 'templates':
         return <Templates />;
+      case 'chart-builder':
+        return <ChartBuilder />;
       default:
         return (
           <div className="settings-content">

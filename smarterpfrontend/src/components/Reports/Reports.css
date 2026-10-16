@@ -1,16 +1,30 @@
+/* Minfy palette: accent #E85D26, deep navy #0A2540 / #1A3A5C, greys #333/#666.
+   Everything is scoped under .reports because CRA stylesheets are global and
+   class names like .status / .stat-card are reused by other screens. */
+
 .reports h1 {
   font-size: 32px;
-  margin-bottom: 30px;
+  margin: 0;
   color: #333;
 }
 
-.reports-nav {
+.reports .reports-title {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.reports .reports-nav {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 30px;
 }
 
-.report-btn {
+.reports .report-btn,
+.reports .refresh-btn {
   padding: 12px 20px;
   border: none;
   background: white;
@@ -19,130 +33,266 @@
   font-weight: 500;
   color: #666;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
-.report-btn.active {
-  background: #007bff;
-  color: white;
-}
-
-.report-btn:hover {
+.reports .report-btn:hover,
+.reports .refresh-btn:hover:not(:disabled) {
   background: #f8f9fa;
 }
 
-.report-btn.active:hover {
-  background: #0056b3;
+.reports .report-btn.active {
+  background: #E85D26;
+  color: white;
 }
 
-.report-section {
+.reports .report-btn.active:hover {
+  background: #c94d1c;
+}
+
+.reports .refresh-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.reports .report-btn:focus-visible,
+.reports .refresh-btn:focus-visible,
+.reports .export-btn:focus-visible {
+  outline: 2px solid #0A2540;
+  outline-offset: 2px;
+}
+
+.reports .report-section {
   background: white;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.report-header {
+.reports .report-panel {
+  margin-bottom: 32px;
+  min-width: 0;
+}
+
+.reports .report-panel:last-child {
+  margin-bottom: 0;
+}
+
+.reports .report-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.reports .report-columns .report-panel {
+  margin-bottom: 0;
+}
+
+.reports .report-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.report-header h2 {
-  font-size: 24px;
-  color: #333;
+.reports .report-header h2 {
+  font-size: 20px;
+  margin: 0;
+  color: #0A2540;
 }
 
-.export-btn {
+.reports .export-btn {
   padding: 8px 16px;
-  background: #28a745;
+  background: #0A2540;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  white-space: nowrap;
   transition: background 0.2s;
 }
 
-.export-btn:hover {
-  background: #218838;
+.reports .export-btn:hover:not(:disabled) {
+  background: #1A3A5C;
 }
 
-.stats-grid {
+.reports .export-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.reports .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.stat-card {
+.reports .stat-card {
   background: #f8f9fa;
   padding: 20px;
   border-radius: 8px;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid #E85D26;
 }
 
-.stat-card h3 {
+.reports .stat-card h3 {
   font-size: 14px;
   color: #666;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   font-weight: 500;
 }
 
-.stat-value {
-  font-size: 28px;
+.reports .stat-value {
+  font-size: 24px;
   font-weight: 700;
   color: #333;
+  overflow-wrap: anywhere;
 }
 
-.report-table {
+.reports .stat-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.reports .table-scroll {
+  overflow-x: auto;
+}
+
+.reports .report-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.report-table th {
+.reports .report-table th {
   text-align: left;
   padding: 12px;
   color: #666;
   font-weight: 500;
   border-bottom: 2px solid #eee;
   background: #f8f9fa;
+  white-space: nowrap;
 }
 
-.report-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid #f5f5f5;
+.reports .report-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.status {
+.reports .report-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.reports .capitalize {
+  text-transform: capitalize;
+}
+
+.reports .progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.reports .progress-track {
+  flex: 1;
+  height: 10px;
+  background: #eceef1;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.reports .progress-fill {
+  height: 100%;
+  background: #E85D26;
+  border-radius: 5px;
+}
+
+.reports .progress-fill.done {
+  background: #146B3A;
+}
+
+.reports .progress-label {
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #333;
+}
+
+.reports .status,
+.reports .type-badge {
+  display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.status.good {
+.reports .status.in-stock,
+.reports .type-badge.income {
   background-color: #d4edda;
   color: #155724;
 }
 
-.status.low {
-  background-color: #fff3cd;
-  color: #856404;
+.reports .status.low-stock {
+  background-color: #fdece4;
+  color: #a8431a;
 }
 
-.status.critical {
+.reports .status.out-of-stock,
+.reports .type-badge.expense {
   background-color: #f8d7da;
   color: #721c24;
 }
 
-.positive {
-  color: #28a745;
+.reports .positive {
+  color: #1e7e34;
   font-weight: 600;
 }
 
-.negative {
-  color: #dc3545;
+.reports .negative {
+  color: #c82333;
   font-weight: 600;
+}
+
+.reports .report-empty,
+.reports .report-loading,
+.reports .report-hint {
+  color: #666;
+  margin: 12px 0;
+}
+
+.reports .report-hint {
+  font-size: 13px;
+}
+
+.reports .report-error {
+  background: #fdecea;
+  color: #b3261e;
+  border-left: 4px solid #f44336;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reports .report-error p {
+  margin: 0;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .reports h1 { font-size: 26px; }
+  .reports .report-section { padding: 16px; }
+  .reports .report-columns { grid-template-columns: 1fr; }
+  .reports .report-header { flex-wrap: wrap; }
 }

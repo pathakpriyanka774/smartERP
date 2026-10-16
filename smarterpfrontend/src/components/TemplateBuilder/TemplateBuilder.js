@@ -1,66 +1,71 @@
 import React, { useState } from 'react';
 import './TemplateBuilder.css';
+import { COMPANY, BUYER_GSTIN_PLACEHOLDER } from '../../config/companyProfile';
 
 const TemplateBuilder = () => {
+  // Seller details come from the company profile (placeholders until it is
+  // configured); the buyer and the sample line are clearly fictional. Real
+  // third-party identifiers were previously hard-coded here.
   const [invoiceData, setInvoiceData] = useState({
     // Company Information
-    companyName: 'RADHA KRISHN EXPORT',
-    companyAddress: 'C-49',
-    sector: 'SECTOR 38',
-    city: 'Noida Uttar Pradesh',
-    pincode: '201305',
+    companyName: COMPANY.name,
+    companyAddress: COMPANY.addressLines[0] || '',
+    sector: COMPANY.addressLines[1] || '',
+    city: COMPANY.addressLines[2] || '',
+    pincode: '',
     country: 'India',
-    gstin: 'GSTIN 09CJPG2343K1Z6',
-    phone: '8057563842',
-    email: 'radhakrishnexport123@gmail.com',
-    website: 'www.radhakrishnexport.com',
-    
+    gstin: `GSTIN ${COMPANY.gstin}`,
+    phone: COMPANY.phone,
+    email: COMPANY.email,
+    website: COMPANY.website,
+
     // Invoice Details
-    invoiceNo: 'RK-484',
-    invoiceDate: '15/05/2025',
+    invoiceNo: 'INV-0001',
+    invoiceDate: '',
     terms: '',
-    dueDate: '15/05/2025',
-    placeOfSupply: 'Uttar Pradesh (09)',
-    
-    // Bill To
-    billToName: 'PARAMOUNT PRODUCTS PVT LTD',
-    billToAddress: 'C-90',
-    billToArea: 'HOSIERY COMPLEX PHASE-2,',
-    billToCity: 'NOIDA',
-    billToPincode: '201305 Uttar Pradesh',
+    dueDate: '',
+    placeOfSupply: COMPANY.placeOfSupply,
+
+    // Bill To (sample customer — replace with the real buyer)
+    billToName: 'Sample Customer Pvt Ltd',
+    billToAddress: '[Buyer address line 1]',
+    billToArea: '[Area]',
+    billToCity: '[City]',
+    billToPincode: '[PIN, State]',
     billToCountry: 'India',
-    billToGstin: 'GSTIN 09AACCP1238T26',
-    
+    billToGstin: `GSTIN ${BUYER_GSTIN_PLACEHOLDER}`,
+
     // Ship To
-    shipToName: 'C-90',
-    shipToAddress: 'HOSIERY COMPLEX PHASE-2,',
-    shipToCity: 'NOIDA',
-    shipToPincode: '201305 Uttar Pradesh',
+    shipToName: 'Sample Customer Pvt Ltd',
+    shipToAddress: '[Delivery address]',
+    shipToCity: '[City]',
+    shipToPincode: '[PIN, State]',
     shipToCountry: 'India',
-    shipToGstin: 'GSTIN 09AACCP1238T26',
-    
-    // Items
+    shipToGstin: `GSTIN ${BUYER_GSTIN_PLACEHOLDER}`,
+
+    // Items (sample line)
     items: [{
       sno: 1,
-      description: 'HT-AB-306',
-      hsn: '581100',
-      qty: 2182.63,
+      description: 'Sample item',
+      hsn: '',
+      qty: 100,
       rate: 40,
-      per: '%',
-      amt: 87305.20,
+      per: 'pcs',
+      amt: 4000,
       cgstPer: 2.5,
-      cgstAmt: 2182.63,
+      cgstAmt: 100,
       sgstPer: 2.5,
-      sgstAmt: 2182.63,
-      amount: 91670.46
+      sgstAmt: 100,
+      amount: 4200
     }],
-    
+
     // Bank Details
-    bankName: 'CANARA BANK',
-    accountNo: '1200356138778',
-    ifscCode: 'CNRB0007820',
-    ewayBillNo: '491622361563',
-    
+    bankName: COMPANY.bank.name,
+    accountNo: COMPANY.bank.account,
+    ifscCode: COMPANY.bank.ifsc,
+    // Issued per consignment, so never a fixed value.
+    ewayBillNo: '',
+
     // Terms & Conditions
     termsConditions: `• Return & After Policy: Returns for alteration are accepted within 2 days of delivery.
 • Ownership & Risk: Any loss or damage after delivery is the buyer's responsibility.
@@ -149,7 +154,13 @@ const TemplateBuilder = () => {
         <h2>Professional Invoice Template Builder</h2>
         <div className="template-actions">
           <button onClick={saveTemplate} className="save-btn">Save Template</button>
-          <button onClick={() => window.print()} className="print-btn">Print Invoice</button>
+          <button onClick={() => {
+            // Scope the print styles to this screen's template (see TemplateBuilder.css).
+            const done = () => { document.body.classList.remove('printing-template'); window.removeEventListener('afterprint', done); };
+            document.body.classList.add('printing-template');
+            window.addEventListener('afterprint', done);
+            window.print();
+          }} className="print-btn">Print Invoice</button>
         </div>
       </div>
 

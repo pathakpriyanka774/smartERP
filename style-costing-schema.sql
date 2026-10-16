@@ -143,6 +143,7 @@ BEGIN
 END
 
 PRINT '✅ Sample costing data inserted';
+GO
 
 -- Create views for costing analysis
 CREATE VIEW vw_StyleCostBreakdown AS
@@ -161,6 +162,7 @@ FROM StyleCostings sc
 JOIN Styles s ON sc.StyleID = s.StyleID
 JOIN Materials m ON sc.MaterialID = m.MaterialID
 WHERE sc.IsActive = 1;
+GO
 
 CREATE VIEW vw_StyleTotalCost AS
 SELECT 
@@ -174,6 +176,7 @@ SELECT
 FROM Styles s
 LEFT JOIN StyleCostings sc ON s.StyleID = sc.StyleID AND sc.IsActive = 1
 GROUP BY s.StyleID, s.StyleCode, s.StyleName, s.Category;
+GO
 
 CREATE VIEW vw_MaterialUsage AS
 SELECT 
@@ -188,6 +191,7 @@ FROM Materials m
 LEFT JOIN StyleCostings sc ON m.MaterialID = sc.MaterialID AND sc.IsActive = 1
 GROUP BY m.MaterialID, m.MaterialCode, m.MaterialName, m.Category, m.CurrentRate;
 
+GO
 PRINT '✅ Costing views created';
 
 -- Create stored procedures

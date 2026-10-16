@@ -130,3 +130,160 @@
   background-color: #f8d7da;
   color: #721c24;
 }
+/* ---- Live data additions ------------------------------------------------
+   Scoped names: CRA bundles stylesheets globally and .status / .notice are
+   already used with different looks on other screens. */
+
+.clients-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.clients .stats-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+.clients .section-header { flex-wrap: wrap; gap: 12px; }
+
+.clients-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.clients-toolbar input,
+.clients-toolbar select {
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-width: 220px;
+}
+
+.clients .add-btn:disabled,
+.clients-btn-secondary:disabled,
+.clients-btn-small:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.clients-btn-secondary {
+  padding: 10px 18px;
+  background: white;
+  border: 1px solid #1e3a5f;
+  color: #1e3a5f;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.clients-btn-small {
+  padding: 5px 10px;
+  background: white;
+  border: 1px solid #1e3a5f;
+  color: #1e3a5f;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.clients-btn-small:hover { background: #1e3a5f; color: white; }
+
+.clients-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.clients-table-wrap { overflow-x: auto; }
+
+.clients-table .num,
+.vendors-table .num { text-align: right; }
+
+.client-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.client-status.active   { background-color: #d4edda; color: #155724; }
+.client-status.inactive { background-color: #f8d7da; color: #721c24; }
+
+.clients-state {
+  padding: 36px 16px;
+  text-align: center;
+  color: #666;
+}
+
+.clients-state.error { color: #b3261e; }
+.clients-state.error p { margin-bottom: 12px; }
+
+.clients-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.clients-notice ul { margin: 0; padding-left: 18px; }
+.clients-notice.success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #4caf50; }
+.clients-notice.error   { background: #fdecea; color: #b3261e; border-left: 4px solid #f44336; }
+
+.clients-notice-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+}
+
+.clients-form {
+  border: 1px solid #e9ecef;
+  border-left: 4px solid #E85D26;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fafbfc;
+}
+
+.clients-form h3 { font-size: 18px; color: #1e3a5f; margin-bottom: 16px; }
+
+.clients-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.clients-field { display: flex; flex-direction: column; gap: 6px; }
+.clients-field label { font-size: 13px; font-weight: 600; color: #1e3a5f; }
+
+.clients-field input,
+.clients-field select {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.clients-field input[readonly] { background: #f1f3f5; color: #555; }
+
+.clients-field input:disabled,
+.clients-field select:disabled { background: #f1f3f5; color: #555; }
+.clients-field-wide { grid-column: span 2; }
+.clients-help { font-size: 12px; color: #555; }
+.clients-form-subhead { font-size: 15px; color: #0A2540; margin: 4px 0 12px; }
+.clients-gstin { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+.clients-muted { color: #6b7280; font-family: inherit; }
+
+.clients-form-actions { display: flex; gap: 10px; }
+
+@media (max-width: 700px) {
+  .clients-toolbar input { min-width: 0; width: 100%; }
+  .clients-field-wide { grid-column: auto; }
+}

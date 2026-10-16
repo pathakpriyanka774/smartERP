@@ -1,0 +1,190 @@
+# 10 — Prioritised Development Roadmap
+
+*For engineering leads and product managers.* 52 findings from the central register: **P0 8 · P1 20 · P2 21 · P3 3**. The same data is in [issue-backlog.csv](issue-backlog.csv). Findings marked *Runtime* were reproduced in the isolated environment; *Static* ones come from code reading.
+
+**Priority scale:**
+- **P0:** critical production blocker.
+- **P1:** high business or technical impact.
+- **P2:** important improvement.
+- **P3:** optional enhancement.
+
+**Complexity, for one experienced full-stack developer familiar with the codebase. These are planning ranges, not quotes:**
+- **S** ≤ 2 days.
+- **M** 3–10 days.
+- **L** 2–4 weeks.
+- **XL** more than 4 weeks.
+
+## Findings by category
+
+A finding can appear under more than one category.
+
+| Category | Count | Findings |
+|---|---:|---|
+| Bugs | 13 | F-001, F-005, F-007, F-009, F-010, F-012, F-019, F-021, F-023, F-031, F-033, F-042, F-048 |
+| Missing functionality | 10 | F-013, F-014, F-015, F-016, F-017, F-018, F-028, F-041, F-045, F-047 |
+| Incomplete workflows | 5 | F-002, F-009, F-013, F-014, F-018 |
+| Data integrity issues | 7 | F-005, F-006, F-011, F-019, F-027, F-034, F-044 |
+| UI/UX improvements | 3 | F-029, F-030, F-032 |
+| Backend improvements | 2 | F-036, F-042 |
+| Database improvements | 2 | F-024, F-040 |
+| Security risks | 10 | F-003, F-004, F-007, F-008, F-022, F-027, F-029, F-037, F-038, F-043 |
+| Performance risks | 1 | F-039 |
+| Reporting gaps | 4 | F-001, F-020, F-035, F-052 |
+| Operations / quality | 5 | F-024, F-025, F-026, F-046, F-049 |
+| Competitive enhancements | 2 | F-050, F-051 |
+
+## Implementation roadmap
+
+### Stage 1 — Critical fixes and data correctness
+- **Scope:**
+  - **Security:** F-003, F-004, F-008, F-022.
+  - **Data correctness:** F-005, F-006, F-019, F-011, F-012.
+  - **Protect the data:** F-024 (migrations and guard), F-025 (backups).
+  - **Stop the bleeding in the UI:** label or hide fabricated and demo screens (part of F-001, F-030).
+- **Dependencies:** none. Can start immediately.
+- **Estimated effort:** about 4–6 developer-weeks.
+- **Acceptance criteria:**
+  - RT-052, RT-056, RT-058, RT-065 and RT-066 pass;
+  - all F-006 probes (RT-015, 019-021, 031, 039, 040) return 400;
+  - `setup-database.js` refuses to run on a non-empty database;
+  - a nightly backup restores into an empty database and the smoke test passes;
+  - a grep for GSTIN/IFSC patterns finds only placeholders.
+- **Measurable outcome:** 0 open P0 security or data-integrity findings; the automated harness has no failures in its security and validation group.
+
+### Stage 2 — Complete broken and disconnected workflows
+- **Scope:**
+  - **Wire the screens to the existing backend:** F-001, F-002, F-009, F-010, F-020, F-035, F-048.
+  - **Item master, stock ledger and valuation:** F-015.
+  - **Order lines, stock reservation and links to clients:** F-013.
+  - **Production material consumption and finished goods:** F-014.
+  - **Payroll from attendance, status lifecycle and payslips:** F-018, F-005 follow-up.
+  - **Dates and errors:** F-052 (IST business dates), F-021.
+- **Dependencies:** Stage 1 validation layer (F-006) and migrations (F-024).
+- **Estimated effort:** about 10–14 developer-weeks.
+- **Acceptance criteria:**
+  - Stories B (with F-016 below), C up to order and stock, D and E complete end to end through the UI;
+  - TC-REG-01 passes on every screen;
+  - dashboard KPIs equal the database (TC-DSH-01..06).
+- **Measurable outcome:** 100% of menu screens read and write real data; dashboard reconciliation tests in CI.
+
+### Stage 3 — UI/UX improvements and module integration
+- **Scope:**
+  - **Procurement backend:** F-016.
+  - **Sales documents:** quotation, invoice, payment (F-028), GST-correct invoicing (F-007), finance postings (F-017, or an accounting export).
+  - **Form submissions:** F-041.
+  - **Screen and permission clean-up:** F-029, F-030, F-031, F-042, F-043.
+  - **Localisation:** F-032, F-033.
+  - **Deduplicate screens:** 07-UI-UX §4. Search, filters and export: F-047.
+- **Dependencies:** Stage 2 item master and order lines.
+- **Estimated effort:** about 12–18 developer-weeks.
+- **Acceptance criteria:**
+  - Stories B and C pass fully;
+  - invoices validated against GST rules by a tax reviewer;
+  - no orphan or demo routes;
+  - every list has search, sort and CSV export.
+- **Measurable outcome:**
+  - a pilot customer runs procure-to-pay and order-to-cash in the ERP for one month without spreadsheets;
+  - support tickets per week tracked.
+
+### Stage 4 — Performance, security and scalability
+- **Scope:**
+  - **API hardening:** F-036 (error handling and timeouts), F-037 (CORS, headers, algorithm pinning), F-038 (log PII).
+  - **Performance:** F-039 (pagination), F-040 (indexes and constraints).
+  - **Audit and operations:** F-027 (audit trail), F-046 (deployment, TLS, monitoring), F-026 (CI with integration tests), F-034 (idempotency, sequences).
+  - **Architecture decision:** consolidate the services or keep them (03-Technical §5).
+- **Dependencies:** none hard; best after Stage 2, when real load patterns exist.
+- **Estimated effort:** about 6–9 developer-weeks.
+- **Acceptance criteria:**
+  - TC-PERF-01..04 meet their targets;
+  - CI blocks merges on test failure;
+  - audit log entries exist for every financial, HR and permission change;
+  - alerts fire on service down.
+- **Measurable outcome:**
+  - p95 API latency < 1 s at 50 concurrent users;
+  - 0 critical or high findings in an independent security review.
+
+### Stage 5 — Advanced reporting and competitive enhancements
+- **Scope:**
+  - **Analytics:** turnover, ageing, OTIF, cost per piece, receivable and payable ageing, forecasting (04-Dashboard §5).
+  - **Platform:** notifications (F-051), multi-company if required (F-050), accounting and GST-portal integrations, mobile shop-floor screens.
+  - **Clean-up:** dead code (F-049).
+- **Dependencies:** Stages 2–3 data model.
+- **Estimated effort:** about 8–16 developer-weeks, depending on the integrations chosen.
+- **Acceptance criteria:**
+  - each new KPI has a documented formula and a reconciliation test;
+  - integrations have retry and failure dashboards.
+- **Measurable outcome:**
+  - management uses the dashboard weekly;
+  - fewer manual reports (measure before and after).
+
+**Overall:** roughly 40–63 developer-weeks to reach a credible SMB-manufacturing product. Two developers working in parallel on independent streams would shorten the calendar time to about 5–8 months. Treat these as ranges to refine after Stage 1.
+
+## Top 10 development tasks
+
+1. **F-003 + F-004:** close the two permission bypasses (per-service authorization, per-source data permissions, bind ports).
+2. **F-005 + F-019:** fix payroll corruption (Mark Paid, employee edits).
+3. **F-006:** server-side validation and DB constraints for quantities, amounts, statuses and dates.
+4. **F-024 + F-025:** non-destructive migrations and tested backups.
+5. **F-008:** replace hard-coded third-party identifiers; move seller details to configuration.
+6. **F-001:** real dashboard from the existing `/reports/dashboard`, with corrected definitions (F-020, F-035).
+7. **F-002 + F-009:** connect Orders, Inventory, Expenses, Clients, Reports, Style Costing and the production and quality screens to their APIs.
+8. **F-015:** item master with cost, stock ledger and valuation.
+9. **F-013 + F-014:** order lines with stock reservation; production consumption and finished-goods receipt.
+10. **F-026:** turn `evidence/runtime-audit.js` into a CI integration suite and fix `App.test.js`.
+
+## Full backlog
+
+| ID | Module | Problem | Evidence | Business impact | Root cause | Recommended fix | Priority | Complexity | Verified |
+|---|---|---|---|---|---|---|---|---|---|
+| F-001 | Dashboard | Every dashboard number is fabricated: revenue "$245,800 +12.5%", 47 orders, 94.2% efficiency, 6.8x turnover, chart bars and financial summary are literals. | smarterpfrontend/src/components/Dashboard/Dashboard.js:33-58, 70-75, 88-111, 124-148; reportsAPI.getDashboard (services/api.js) never called | Management makes decisions on numbers that never change and are not the company's data. | Dashboard was built as a visual mock-up and never wired to report-service. | Render /api/reports/dashboard (already returns real KPIs, verified RT-042..044); remove all literal figures; show "no data yet" when empty. | P0 | M | Static (+ backend reconciliation Runtime RT-042..044) |
+| F-002 | Orders, Inventory, Expenses, Clients, Production, Reports | Six core screens use hard-coded arrays and React state; nothing is saved. Data disappears on refresh, and Add buttons on Expenses/Clients/Reports export do nothing. | Orders.js:22-74,94-130; Inventory.js:20-91,111-144; Expenses.js:7-20,104,141; Clients.js:7-19,64,124; Production.js:22-87; Reports.js:7-35,64,107,131,155. 47 of 80 api.js methods unused (ordersAPI, inventoryAPI, financeAPI, clientsAPI, reportsAPI, productionAPI...) | The ERP cannot record a single real order, stock item, expense or client from its UI. The working backend is unreachable for users. | Frontend built on mock data first; API integration never completed. | Wire each screen to its existing api.js client and backend service; add loading/error states; delete mock arrays. | P0 | L | Static |
+| F-003 | Page Builder / Custom Pages | Any logged-in user can read Employees, Attendance, Orders, Inventory, Clients and Finance rows through the page-builder data-source endpoints, bypassing area permissions. | page-builder-service/server.js GET /datasources/:key/rows and /aggregate (no permission check); gateway maps builder to login-only (gateway/server.js:35). Runtime RT-065: orders-only user got 200 with employee and attendance rows while /api/attendance returned 403 | Personal data (employee records, attendance) exposed to every account — DPDP Act exposure. | Data sources added for page authoring without per-source authorisation. | Map each data source to the area permission that owns it (employees→payroll, attendance→attendance, …) and enforce it on rows/aggregate/columns; restrict custom pages to the sources their viewers may see. | P0 | S | Runtime |
+| F-004 | All services | Services check only that a token is valid, not the area permission; they listen on all interfaces. Anyone with any valid token can call a service port directly and read data (e.g. payroll). | shared/auth.js:70-76 (protectService authenticates only); app.listen(PORT) without host in every service; Runtime RT-052: orders-only token → 200 with employee salary data on payroll port | Salary and personal data readable by any employee who can reach the server ports. | Authorisation implemented only in the gateway; services trust the network. | Enforce requirePermission inside each service (same map as gateway) and bind services to 127.0.0.1 / private network; firewall service ports. | P0 | S | Runtime |
+| F-005 | Payroll | "Mark Paid" sets the payroll's allowances and deductions to 0 and does not mark it paid (no status column; status hard-coded "pending"). | Payroll.js:92 sends {status:"paid"}; payroll-service PUT /payrolls/:id writes allowances\|\|0, deductions\|\|0; postgres/01-core-setup.sql Payrolls has no Status; Runtime RT-066 | Salaries silently change when HR marks them paid; no record of what was paid. | Frontend and API contract never agreed; payroll has no lifecycle. | Add Status (pending/approved/paid) + PaidAt/PaidBy; PUT updates only supplied fields; separate /payrolls/:id/pay action. | P0 | S | Runtime |
+| F-006 | Business validation (orders, inventory, production, payroll) | Server accepts negative stock, negative order amounts, invalid order statuses, delivery before order date, negative production, negative deductions that inflate pay, and payroll month "banana". | Runtime RT-015, RT-019, RT-020, RT-021, RT-031, RT-039, RT-040; order-service, inventory-service, production-planning-service, payroll-service validate only names | Financial and stock figures can be corrupted by typos; pay can be inflated without trace. | No server-side validation layer or database CHECK constraints. | Add request validation (schema per endpoint) and DB CHECK constraints (quantity>=0, amount>=0, status IN (...), month format). | P0 | M | Runtime |
+| F-007 | Invoicing | Invoices are wrong and not stored: GST layout shows CGST 2.5% + SGST 2.5% but totals use 8%; invoice number generated once per page load (duplicates); invoices saved only in the browser and never read; "total in words" prints digits. | OrderWorkflow/InvoiceGenerator.js:80, 139-145, 153-164, 263-265, 279, 285-288 | Issuing these invoices would breach GST rules (incorrect tax, non-unique numbers) and leave no records. | Invoice designer built as a front-end prototype without a backend or tax engine. | Do not use for customers until rebuilt: backend invoice table with sequential numbering per financial year, GST computed from HSN/place of supply, persisted line items. | P0 | L | Static |
+| F-008 | Invoicing / Templates | Real-looking third-party business identifiers are hard-coded in source: company names, addresses, GSTIN, phone, email, bank account, IFSC, e-way bill numbers; same buyer GSTIN for every client. | InvoiceGenerator.js:179-191, 226, 234, 296-299; TemplateBuilder/TemplateBuilder.js:7-15, 26-40, 59-62; TemplateList/TemplateList.js:111-122, 243-246 (values deliberately not reproduced in this report) | Third-party personal/financial data distributed with the code; risk under DPDP Act and confidentiality. | Sample data copied from a real invoice. | Replace with clearly fictional placeholders now; move seller details to configuration stored server-side; review git history for exposure. | P0 | S | Static |
+| F-009 | Style Costing, Planning Dashboard, Quality Dashboard, Worker Dashboard | Four routed screens call service ports directly without the login token (and Style Costing uses wrong paths), so they always show empty data — "No tasks", "All caught up". | StyleCosting.js:31,43,55,67,86 (/costing/* paths do not exist); ProductionPlanning/PlanningDashboard.js:26,38,51; QualityManagement/QualityDashboard.js:25,38; ProductionWorkflow/ProductionWorkerDashboard.js:22,36 | Costing, production planning and quality modules are unusable from the UI although their backends work (101-endpoint smoke test). | Bypassed the shared api.js client. | Use costingAPI / productionAPI / qualityAPI from services/api.js; surface errors instead of empty states. | P1 | S | Static |
+| F-010 | Planning Dashboard | Machine allocation sends null IDs (reads MachineID/OrderID that the views do not return) and reports success even when the procedure returns Result=Error. | PlanningDashboard.js:238, 355; production-planning-service/server.js POST /machines/allocate returns success:true regardless; postgres/02-production-planning.sql vw_MachineStatus, vw_ProductionOverview | Planners believe machines are allocated when they are not. | View columns and UI expectations diverged; business errors returned as rows with HTTP 200. | Add MachineID/OrderID to the views; return 409 when Result=Error; show the message. | P1 | S | Static |
+| F-011 | Production Planning | Production can exceed target and order quantity without limit (5,080 pieces on a 120-piece task, 5,080 of 1,000 on the order); order status never changes to Completed. | postgres/02-production-planning.sql sp_RecordProduction (no bound checks, no status transition); Runtime RT-028, RT-029, RT-045 | Over-reporting inflates output and efficiency; orders never close. | No business rules in the recording procedure. | Reject pieces > remaining (or require supervisor override); auto-set ProductionOrders.Status when CompletedQuantity >= TotalQuantity. | P1 | S | Runtime |
+| F-012 | Reports / Production Planning | Production report and employee-performance endpoints crash (HTTP 500 numeric field overflow) once efficiency passes 999.99%. | report-service/server.js GET /reports/production and production-planning-service GET /planning/employee-performance cast to DECIMAL(5,2); Runtime RT-034 (+ direct check: both 500) | One mis-recorded batch takes reporting down for everyone. | Percentage column too narrow + F-011. | Widen to DECIMAL(9,2) or NUMERIC; fix F-011; catch and report data anomalies. | P1 | S | Runtime |
+| F-013 | Sales / Inventory / Finance | Orders are isolated: no order lines or products, no link to clients (free-text name), stock is not reserved or deducted, no receivable or revenue is recorded. | postgres/04-erp-core.sql Orders (ClientName text, no items); Runtime RT-017, RT-018, RT-023 | Sales, stock and money cannot be reconciled; every figure must be re-entered elsewhere. | Modules designed as independent CRUD tables. | Introduce order lines referencing items and clients; reserve/deduct stock on confirm/dispatch; create invoice/receivable on invoice. | P1 | XL | Runtime |
+| F-014 | Production / Inventory | Production consumes no raw material and creates no finished goods; costing materials (Materials) and stock (InventoryItems) are separate, unlinked masters. | Runtime RT-030; postgres/03-style-costing.sql Materials vs postgres/04-erp-core.sql InventoryItems | Stock levels and production cost are never accurate. | No bill-of-materials-to-stock link. | Unify item master; use StyleCostings as BOM; post consumption and finished-goods receipts from production records. | P1 | L | Runtime |
+| F-015 | Inventory | Inventory has no unit cost, SKU, warehouse/location or movement history, so stock value cannot be computed (the reference scenario value of 85,625 cannot be reproduced). | postgres/04-erp-core.sql InventoryItems; Runtime RT-014 (unitPrice silently discarded), RT-006 (no warehouses) | No inventory valuation for accounts, insurance or management. | Minimal schema. | Add cost, SKU (unique), location, and a StockMovements ledger (receipt/issue/adjustment) with valuation method (weighted average). | P1 | L | Runtime |
+| F-016 | Procurement | Purchase orders, goods receipt and supplier management exist only as a browser-storage demo with wrong maths (fixed "$10/unit", qty 0 becomes full receipt, negatives allowed, partial receipt closes PO). | InventoryWorkflow/StockChecker.js:33-49; PurchaseOrders.js:34-36; GoodsReceiving.js:21-54 (line 27, 41); Runtime RT-008, RT-009 (no backend) | Purchasing cannot be run in the ERP. | Prototype never given a backend. | Build suppliers, purchase orders, approvals and goods-receipt in the backend; post receipts to stock ledger (F-015). | P1 | XL | Runtime + Static |
+| F-017 | Finance | Finance is a flat list of income/expense rows: no chart of accounts, receivables, payables, bank, GST, or links to orders, purchases or payroll; no currency/tax settings. | postgres/04-erp-core.sql FinanceTransactions; finance-service/server.js (3 endpoints); Runtime RT-007 | Cannot produce statutory accounts, GST returns or receivable ageing. | Scope not yet built. | Either integrate an accounting package (Tally/Zoho Books export) or build AR/AP + GL postings with GST. | P1 | XL | Runtime + Static |
+| F-018 | Payroll | Payroll ignores attendance (absent day not deducted) and has no statutory components (PF, ESI, PT, TDS), leave, approval or payslips. | Runtime RT-038; payroll-service/server.js; postgres/01-core-setup.sql Payrolls | Payroll must still be computed outside the system. | Payroll = base salary copy. | Compute pay from attendance and salary structure; add statutory deductions, approval and payslip PDF. | P1 | L | Runtime |
+| F-019 | Payroll | Editing an employee erases the joining date (UI reads JoiningDate, API returns joiningDate) and a partial update returns 500 because PUT overwrites every column. | Payroll.js:66, 183; payroll-service/server.js PUT /employees/:id (:117-124); Runtime RT-041 (500, NOT NULL on email) | Employee master data degrades every time it is edited. | Field-name mismatch + full-overwrite update. | Use joiningDate; switch to COALESCE partial updates with 404 for unknown id. | P1 | S | Runtime + Static |
+| F-020 | Reports | Total sales includes cancelled orders; "Top products" is production quantity × material cost, not sales. | report-service/server.js GET /reports/sales; Runtime RT-046, RT-047 | Sales performance overstated; product ranking misleading. | Report SQL lacks status filters; no sales line data exists (F-013). | Exclude cancelled/rejected orders; base product ranking on order lines once F-013 exists; label the current metric honestly until then. | P1 | S | Runtime |
+| F-021 | Authentication | A wrong password reloads the page instead of showing "Invalid credentials" (401 interceptor reloads unless the path starts with /login, but the login screen is mounted at "*"). | services/api.js:40-51; App.js:78 | Users cannot tell why login failed. | Interceptor assumes a /login route. | Skip the reload for the login request itself (check request URL) or mount login at /login. | P1 | S | Static |
+| F-022 | Authentication | Logout leaves the JWT in localStorage; deactivated users keep access for up to 24 h; no brute-force protection on login. | App.js:63-66; Runtime RT-056 (deactivated token → 200), RT-058 (25 wrong passwords, no throttling) | Shared computers stay logged in; dismissed staff retain access; password guessing is unlimited. | Stateless JWT without revocation or rate limiting. | clearSession() on logout; check IsActive (or a token version) per request at the gateway; add rate limiting/lockout on /login and /signup. | P1 | S | Runtime + Static |
+| F-023 | Orders (UI) | Orders screen crashes after editing an order and expanding it (quantity/unitPrice become strings, then .toFixed throws); no error boundary. | Orders.js:101, 428 | Users lose the screen until reload. | Form values not converted on edit. | Convert numbers on edit; add an app-level error boundary. (Superseded once F-002 rewires the screen.) | P1 | S | Static |
+| F-024 | Platform | Re-running setup-database.js (or any schema file) drops and recreates tables and wipes business data; there is no migration tool or versioning. | postgres/01..07 begin with DROP TABLE ... CASCADE; setup-database.js applies all files | One wrong command deletes the company's data. | Schema files are bootstrap scripts, not migrations. | Freeze current schema as baseline; adopt versioned migrations (node-pg-migrate or similar); make setup refuse to run on a non-empty database without --force. | P1 | M | Static |
+| F-025 | Platform | No backup, restore or disaster-recovery procedure exists. | Repository: no backup scripts, docs or scheduled jobs | Hardware failure or mistake means permanent data loss. | Not yet addressed. | Scheduled pg_dump with retention + restore drill; document RPO/RTO. | P1 | S | Static |
+| F-026 | Platform | No backend tests, no CI pipeline; the only original frontend test is the Create React App placeholder and it fails (cannot resolve react-router-dom, expects "learn react"). | smarterpfrontend/src/App.test.js; npm test result: 1 suite failed; no .github/ or pipeline files; backend package.json has no test script | Regressions (like F-005) ship unnoticed. | Testing not set up. | Add API integration tests against a disposable database (the evidence/runtime-audit.js harness is a starting point) and run them in CI with frontend unit tests. | P1 | M | Runtime |
+| F-027 | Platform | No audit trail: nobody can see who changed a salary, stock quantity, order or permission, or when. | No audit tables or triggers in postgres/*.sql; services log only to console | Fraud or mistakes cannot be investigated; weak for ISO 27001 / SOC 2. | Not designed. | Add an AuditLog table written by services (actor, entity, before/after, timestamp) for financial, HR and permission changes. | P1 | M | Static |
+| F-028 | Sales | No quotations, sales invoices (server-side), payments, shipments, returns or refunds. | Runtime RT-023; no corresponding tables in postgres/*.sql | Order-to-cash process cannot be completed. | Scope not built. | Build quotation → order → dispatch → invoice → payment with status workflow (depends on F-013, F-017). | P1 | XL | Runtime |
+| F-029 | Navigation | Eight routes open for any logged-in user regardless of permissions: /workflows, /permissions, /roles, /templates, /planning-dashboard, /worker-dashboard, /quality-dashboard, /p/:pageKey (including inactive pages). | App.js:104, 111-113, 117-119, 123; page-builder-service GET /pages/:pageKey (no status/permission check) | Users reach screens and unpublished pages they should not see. | Routes added without RequirePermission. | Wrap in RequirePermission (dashboards → production); hide inactive pages from non-authors; remove demo routes. | P2 | S | Static |
+| F-030 | Roles / Permissions / API Manager / Form Rules / Workflows | Five settings screens are browser-only demos with no effect: Roles and Permissions conflict with the real User Management; API Manager lists fake endpoints; Form Rules and Workflows are never applied. | ApplicationSettings/Roles.js, Permissions.js (localStorage); ApiManager.js:16-53; FormRules.js:16-53; Workflows/Workflows.js | Admins think they changed access or rules when nothing happened. | Prototypes left in the product. | Remove or clearly label as "preview"; point to User Management for access control. | P2 | S | Static |
+| F-031 | Templates | Templates screen crashes when TemplateBuilder or TemplateList have saved templates (three record shapes share one browser key); template variables are never substituted; "Use this template" does not navigate. | ApplicationSettings/Templates.js:216, 222; TemplateBuilder.js:130-140; TemplateList.js:64-67, 95 | Template features unusable. | Three independent prototypes share one key. | Consolidate into one server-backed template model, or remove until invoicing is rebuilt (F-007). | P2 | M | Static |
+| F-032 | All screens | Currency is shown as "$" across the application for an Indian business (INR); invoice formats mix $ and ₹; dates use en-US. | Dashboard.js, Orders.js, Inventory.js, Expenses.js, Payroll.js:131,184-185,242-245, StyleCosting.js, InvoiceGenerator.js (agent evidence) | Reports look foreign and confuse users; risk of wrong currency on documents. | Hard-coded symbols. | Central formatter (₹, en-IN grouping, IST dates) driven by an organisation setting. | P2 | S | Static |
+| F-033 | Attendance | Default dates are wrong in India between 00:00–05:30 (today() uses UTC) and the "month to date" filter starts on the last day of the previous month. | Attendance/Attendance.js:6, 9 | Early-morning users see yesterday; monthly summaries include an extra day. | toISOString() used for local dates. | Format dates in Asia/Kolkata (Intl API), as the backend already does (shared/app-time.js). | P2 | S | Static |
+| F-034 | Orders / Platform | Double-clicking Save creates duplicate records (no idempotency); concurrent employee creation fails with 500 because codes are COUNT(*)+1. | Runtime RT-022 (2 orders); concurrent POST /payroll/employees: 1 ok, 3 × 500 duplicate EmployeeCode (sp_CreateEmployee, postgres/01-core-setup.sql) | Duplicates and intermittent failures when several people work at once. | No idempotency keys; code from row count. | Disable submit while saving and accept an Idempotency-Key; generate codes from a sequence. | P2 | S | Runtime |
+| F-035 | Payroll | Payroll KPIs are mislabelled: "Total CTC" is base×12 (ignores CTC), "Pending Payrolls" counts last month's processed payrolls, "Total Employees" includes inactive staff while the list shows active only. | payroll-service/server.js GET /stats (:322-326) | HR cost figures differ from the employee records. | Placeholder formulas. | Use SUM(CTC), status-based pending count (needs F-005), and consistent active filter. | P2 | S | Static |
+| F-036 | API / Gateway | Inconsistent error handling: over-length input and negative limits return 500; gateway returns 500 with the raw upstream error when a service is down; no proxy timeout; business errors returned as HTTP 200. | Runtime RT-061, RT-063; gateway/server.js:107-111; production-planning-service allocate | Users see "Failed" with no reason; internal details leak. | No shared validation/error middleware. | Shared error handler mapping validation→400, conflicts→409, upstream down→503 with generic text; set proxy and DB statement timeouts. | P2 | M | Runtime |
+| F-037 | Gateway / Services | CORS allows any origin; no security headers (helmet/CSP); JWT kept in localStorage (readable by any injected script); JWT verify does not pin the algorithm. | gateway/server.js:9 and every service app.use(cors()); services/api.js:12; shared/auth.js:23-32 | Raises the impact of any future XSS bug to full account takeover. | Defaults left in place. | Restrict CORS to the app origin; add helmet with CSP; pin algorithms:["HS256"]; consider httpOnly cookies. | P2 | S | Static |
+| F-038 | Gateway / Auth | Logs contain personal data: the gateway logs user e-mail on 403 and auth-service logs every request URL. | gateway/server.js:92; auth-service/server.js:41-44 | Personal data in plain-text logs (DPDP). | Debug logging kept. | Log user id only; structured logs without query strings containing PII. | P2 | S | Static |
+| F-039 | All list endpoints | No pagination or filtering on list endpoints (orders, inventory, payrolls, attendance, users, pages...). | Agent C endpoint review; only page-builder rows has a cap (500) | Screens slow down and memory grows as data accumulates. | Small-data assumption. | Add limit/offset (or keyset) + server-side filters and sort to list endpoints. | P2 | M | Static |
+| F-040 | Database | Foreign-key columns are not indexed; business tables lack CHECK constraints and natural unique keys (e.g. one payroll per employee per month). | postgres/02-production-planning.sql, 03, 01 (Payrolls), 04: only 6 indexes in the whole schema | Slower joins as data grows; duplicates and invalid states possible (supports F-006). | Schema ported 1:1 from prototype. | Index FK columns; add CHECKs and UNIQUE(EmployeeID, Month). | P2 | S | Static |
+| F-041 | Form Builder | Forms can be designed and placed on pages, but submissions are never stored ("Captured (not yet persisted)"). | pagebuilder/PageRenderer.js FormFields onSubmit | Forms collect nothing. | Submission storage not built. | Add FormSubmissions table + endpoint + list/export screen; validate against the form definition server-side. | P2 | M | Static |
+| F-042 | Menu Manager / Form Builder | Screens are opened with the menu-manager / form-builder permission but saving requires page-builder, so those users get 403 on every save. | page-builder-service/server.js canAuthor (requirePermission page-builder) on /menus, /pages; App.js routes | Delegated admins cannot do their job. | One permission reused for three tools. | Accept the screen's own permission on its write routes. | P2 | S | Static |
+| F-043 | User Management | Editing an Admin stores every permission key for that user, which become effective if the user is later demoted; self-demotion is allowed; permission save is not transactional. | UserManagement.js:85, 161; auth-service/server.js savePermissions (DELETE then INSERTs) | Demoted admins may keep broad access. | Form resubmits derived admin permissions. | Do not persist permissions for Admin role; block self-demotion of the last admin; wrap save in a transaction. | P2 | S | Static |
+| F-044 | Quality | Inspection totals are not validated (approved + rejected may differ from inspected); /quality/inspect is not transactional; inspector is hard-coded to employee 1 in the UI. | Runtime RT-033; production-planning-service POST /quality/inspect; QualityDashboard.js:43 | Quality statistics unreliable; wrong inspector recorded. | Missing checks. | Validate sums server-side; use the transaction path; take inspector from the logged-in user. | P2 | S | Runtime + Static |
+| F-045 | Production Planning | A machine allocation can never be ended, so machines stay "Occupied" forever; no rescheduling. | production-planning-service/server.js (no endpoint updates MachineAllocations.Status or frees Machines.Status) | Machine availability degrades to zero over time. | Lifecycle incomplete. | Add release/complete allocation endpoint that frees the machine. | P2 | S | Static |
+| F-046 | Platform | No structured logging, metrics, health dashboard or alerting; no deployment configuration (Docker, process manager, HTTPS). | console.log only; no Dockerfile / compose / pm2 config / CI in repository | Outages go unnoticed; deployments are manual and unrepeatable. | Development-stage project. | Process manager + reverse proxy with TLS; structured logs; uptime and error alerts. | P2 | M | Static |
+| F-047 | Reports | No export (PDF/Excel) — the four "Export PDF" buttons do nothing; no data import (Runtime RT-010). | Reports.js:64, 107, 131, 155; Runtime RT-010 | Data must be retyped into spreadsheets. | Not built. | CSV/Excel export on list endpoints; CSV import for items, clients, employees with validation report. | P2 | M | Runtime + Static |
+| F-048 | Production (UI workflow) | Production workflow tabs are disconnected: Order Review is always empty (no code produces Confirmed/Invoiced orders), Material Check always reports full shortage (stale state), scheduler invents quantity 100 and writes batches nothing reads. | ProductionWorkflow/OrderReview.js:9-13; MaterialCheck.js:11, 34; ProductionScheduler.js:55, 68-69 | Production workflow cannot be completed in the UI. | Browser-storage prototype. | Replace with production-planning backend (orders, allocation, tasks) — see F-009, F-014. | P2 | M | Static |
+| F-052 | Production, Quality, Finance, Orders | "Today" and default dates use the UTC calendar day, so work recorded between 00:00 and 05:30 IST is filed under the previous day (production date, transaction date, order date, "today's" dashboard figures); month-end income can land in the wrong month. | shared/database.js sets session TimeZone=UTC; CURRENT_DATE defaults in postgres/02, 04; WHERE ProductionDate = CURRENT_DATE in production-planning-service /planning/summary, /quality/dashboard; finance-service POST uses CURRENT_DATE | Daily and monthly figures shift between days around midnight IST. | Attendance derives the IST date in the application, other modules do not. | Pass the business date (APP_TIMEZONE) from the application as attendance does, or set the session time zone to the organisation's zone for date defaults. | P2 | S | Static |
+| F-049 | Codebase | Dead and legacy code: retired production-service (empty routes folder), shared/init-db.js and shared/production-schema.js (SQL Server DDL), backend test-*.js scripts for SQL Server, unrouted ProductionPlanning.js and QualityManagement.js, unused CreateOrder, start:production script. | smarterpbackend/services/production-service/, shared/init-db.js, shared/production-schema.js, smarterpbackend/test-*.js, package.json start:production | Confuses developers; risk of someone running obsolete code. | Migration leftovers. | Delete or move to an archive folder after confirming nothing imports them. | P3 | S | Static |
+| F-050 | Platform | Single-organisation design: no company/branch dimension, no multi-currency, no localisation framework. | No OrganizationID/BranchID in any table (postgres/*.sql) | Cannot serve groups with several companies or branches. | Out of current scope. | Decide on tenancy model before data grows; add Company/Branch to masters and transactions if required. | P3 | XL | Static |
+| F-051 | Platform | No notifications (email/WhatsApp/in-app) for low stock, approvals, payroll or late attendance; no mobile-friendly worker screens verified. | No notification code in repository | Staff must poll screens. | Not built. | Event hooks + notification service once core workflows exist. | P3 | L | Static |

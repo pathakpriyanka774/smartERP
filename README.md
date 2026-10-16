@@ -6,6 +6,7 @@ A comprehensive Enterprise Resource Planning (ERP) system built with React.js fr
 
 ### Core Modules
 - **👥 Employee & Payroll Management** - Complete employee onboarding and payroll processing
+- **🕒 Employee Attendance** - Daily register, check-in/check-out, and per-employee attendance summaries
 - **🏭 Production Planning** - Machine allocation, task management, and production tracking
 - **🔍 Quality Management** - Quality inspection workflows and defect tracking
 - **💰 Style Costing** - Material costing and style-wise cost analysis
@@ -17,7 +18,8 @@ A comprehensive Enterprise Resource Planning (ERP) system built with React.js fr
 - **🎯 Planning Manager Dashboard** - Production oversight and resource allocation
 - **👷 Production Worker Dashboard** - Daily task management and progress tracking
 - **🔍 Quality Team Dashboard** - Inspection workflows and quality metrics
-- **⚙️ Application Settings** - Form builder, page builder, and system configuration
+- **⚙️ Application Settings** - Form builder, page builder, menu manager, and system configuration
+- **🧩 Page Builder** - Drag-and-drop pages built from live ERP data, published to the sidebar via Menu Manager
 
 ## 🏗️ Architecture
 
@@ -25,8 +27,8 @@ A comprehensive Enterprise Resource Planning (ERP) system built with React.js fr
 Frontend (React.js)
     ↓ HTTP/REST APIs
 Backend Microservices (Node.js)
-    ↓ SQL Server Integration
-Microsoft SQL Server Database
+    ↓ node-postgres (pg)
+PostgreSQL Database
 ```
 
 ### Microservices
@@ -51,7 +53,7 @@ Microsoft SQL Server Database
 ### Backend
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
-- **Microsoft SQL Server** - Primary database
+- **PostgreSQL** - Primary database
 - **JWT** - Authentication tokens
 - **bcryptjs** - Password hashing
 - **CORS** - Cross-origin resource sharing
@@ -59,8 +61,7 @@ Microsoft SQL Server Database
 ## 📋 Prerequisites
 
 - **Node.js** (v16 or higher)
-- **Microsoft SQL Server** (2019 or higher)
-- **SQL Server Management Studio (SSMS)**
+- **PostgreSQL** (16 or higher)
 - **Git** for version control
 
 ## 🚀 Quick Start
@@ -71,30 +72,45 @@ git clone https://github.com/yourusername/smarterp.git
 cd smarterp
 ```
 
-### 2. Database Setup
-```sql
--- In SQL Server Management Studio (SSMS):
--- 1. Create database: CREATE DATABASE SmartERP;
--- 2. Run: complete-setup-database.sql
--- 3. Run: production-planning-schema.sql
--- 4. Run: style-costing-schema.sql
+### 2. Create the PostgreSQL role and database
+
+Once, as the `postgres` superuser. The app connects as `smarterp`, never as
+`postgres`.
+
+```bash
+sudo -u postgres psql -c "CREATE ROLE smarterp WITH LOGIN PASSWORD '<your password>';"
+sudo -u postgres psql -c "CREATE DATABASE smarterp OWNER smarterp;"
 ```
 
 ### 3. Backend Setup
 ```bash
 cd smarterpbackend
 npm install
+cp -n .env.example .env # -n: never clobber an existing .env
+                        # then set DB_PASSWORD and JWT_SECRET
 
-# Configure environment variables
-# Update .env file with your SQL Server credentials:
-DB_SERVER=localhost
-DB_DATABASE=SmartERP
-DB_USER=sa
-DB_PASSWORD=YourPassword
+# Install the schema (empty database) or apply pending migrations (existing one)
+npm run db:migrate
 
 # Start all services
 npm run start:all
 ```
+
+Running `db:migrate` again is always safe: on a database that holds data it only
+applies migrations from `postgres/migrations/` that have not run yet. Wiping and
+reinstalling needs `node ../setup-database.js --fresh --confirm-wipe`. Back up
+with `npm run db:backup`, and see `smarterpbackend/README.md` for restore,
+the test suite and the permission model.
+
+Invoices print the seller details from `smarterpfrontend/src/config/companyProfile.js`,
+which holds placeholders only. Set `REACT_APP_COMPANY_NAME`, `REACT_APP_COMPANY_GSTIN`,
+`REACT_APP_COMPANY_ADDRESS` (lines separated by `|`), `REACT_APP_COMPANY_PHONE`,
+`REACT_APP_COMPANY_EMAIL`, `REACT_APP_COMPANY_PLACE_OF_SUPPLY`, `REACT_APP_COMPANY_BANK_NAME`,
+`REACT_APP_COMPANY_BANK_ACCOUNT` and `REACT_APP_COMPANY_BANK_IFSC` in `smarterpfrontend/.env`
+before building — never in source code.
+
+The `.sql` files in the repository root are the original SQL Server schema,
+kept for reference; nothing reads them any more.
 
 ### 4. Frontend Setup
 ```bash
@@ -103,9 +119,20 @@ npm install
 npm start
 ```
 
-### 5. Access the Application
+### 5. Create the first account
+
+There are no seeded credentials.
+
+```bash
+curl -X POST http://localhost:8000/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"admin","email":"you@example.com","password":"<at least 8 chars>"}'
+```
+
+### 6. Access the Application
 - **Frontend**: http://localhost:3000
-- **Backend Services**: http://localhost:5000-5010
+- **API Gateway**: http://localhost:8000
+- **Backend Services**: http://localhost:5001-5012 (5004 is retired)
 
 ## 📊 Database Schema
 
@@ -179,8 +206,10 @@ smarterp/
 npm run start:gateway         # Start API gateway
 npm run start:auth           # Start auth service
 npm run start:payroll        # Start payroll service
-npm run start:production-planning  # Start production service
+npm run start:production-planning  # Start production planning service
 npm run start:costing        # Start costing service
+npm run start:attendance     # Start attendance service
+npm run start:builder        # Start page builder service
 npm run start:all            # Start all services
 ```
 
@@ -225,7 +254,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Project Lead** - System architecture and development
 - **Frontend Team** - React.js UI development
 - **Backend Team** - Node.js microservices
-- **Database Team** - SQL Server design and optimization
+- **Database Team** - PostgreSQL design and optimization
 - **QA Team** - Testing and quality assurance
 
 ## 📞 Support

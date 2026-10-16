@@ -1,0 +1,101 @@
+/* Company settings. Minfy palette: accent #E85D26, navy #0A2540, secondary #1A3A5C / #333333. */
+.cs {
+  --cs-accent: #E85D26;
+  --cs-accent-dark: #c44a18;
+  --cs-navy: #0A2540;
+  --cs-navy-2: #1A3A5C;
+  --cs-text: #333333;
+  --cs-muted: #5f6b7a;
+  --cs-border: #dfe3e8;
+  padding: 20px;
+  max-width: 1100px;
+  color: var(--cs-text);
+}
+.cs-header h1 { color: var(--cs-navy); margin: 0 0 4px; font-size: 26px; }
+.cs-subtitle { margin: 0 0 16px; color: var(--cs-muted); font-size: 14px; }
+
+.cs-banner {
+  background: #fff5ef;
+  border: 1px solid #f6c3ab;
+  border-left: 5px solid var(--cs-accent);
+  color: #7a2e0e;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.cs-section {
+  background: #fff;
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
+  padding: 16px 20px 8px;
+  margin: 0 0 18px;
+}
+.cs-section legend {
+  color: #fff;
+  background: var(--cs-navy);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 18px; }
+.cs-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; font-size: 13px; }
+.cs-field label { font-weight: 600; color: var(--cs-navy-2); }
+.cs-wide { grid-column: 1 / -1; }
+.cs-field input, .cs-field select, .cs-field textarea {
+  padding: 8px 10px;
+  border: 1px solid #c4ccd6;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--cs-text);
+  background: #fff;
+}
+.cs-field input:focus, .cs-field select:focus, .cs-field textarea:focus {
+  outline: none;
+  border-color: var(--cs-accent);
+  box-shadow: 0 0 0 3px rgba(232, 93, 38, 0.18);
+}
+.cs-upper { text-transform: uppercase; }
+.cs-readonly { background: #f5f7fa !important; color: var(--cs-navy-2) !important; }
+.cs-check { flex-direction: row; align-items: center; gap: 8px; }
+.cs-check input { width: 18px; height: 18px; accent-color: var(--cs-accent); }
+.cs-hint { color: var(--cs-muted); font-size: 12px; }
+.cs-note {
+  background: #f5f7fa;
+  border-left: 4px solid var(--cs-navy-2);
+  padding: 8px 12px;
+  font-size: 13px;
+  margin: 4px 0 14px;
+}
+
+.cs-notice { padding: 10px 14px; border-radius: 6px; margin: 10px 0; font-size: 14px; }
+.cs-notice ul { margin: 6px 0 0; padding-left: 18px; }
+.cs-notice.error { background: #fdecea; color: #b42318; }
+.cs-notice.success { background: #e6f4ec; color: #1e7b45; }
+
+.cs-actions {
+  display: flex;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 12px 0;
+  border-top: 1px solid var(--cs-border);
+}
+.cs-btn { border: 1px solid transparent; border-radius: 6px; padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.cs-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.cs-btn:focus-visible { outline: 2px solid var(--cs-accent); outline-offset: 2px; }
+.cs-btn-primary { background: var(--cs-accent); color: #fff; }
+.cs-btn-primary:hover:not(:disabled) { background: var(--cs-accent-dark); }
+.cs-btn-secondary { background: #fff; color: var(--cs-navy); border-color: var(--cs-navy-2); }
+
+.cs-state { padding: 30px; text-align: center; color: var(--cs-muted); }
+.cs-error { color: #b42318; background: #fdecea; border-radius: 6px; display: flex; gap: 12px; justify-content: center; align-items: center; }
+
+@media (max-width: 640px) {
+  .cs { padding: 12px; }
+  .cs-section { padding: 12px; }
+}

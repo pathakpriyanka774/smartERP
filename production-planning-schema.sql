@@ -40,6 +40,7 @@ CREATE TABLE Machines (
     MachineType NVARCHAR(50), -- Cutting, Sewing, Finishing, etc.
     Status NVARCHAR(20) DEFAULT 'Available', -- Available, Occupied, Maintenance
     Location NVARCHAR(100),
+    CapacityPerHour INT DEFAULT 0,
     IsActive BIT DEFAULT 1,
     CreatedAt DATETIME DEFAULT GETDATE()
 );
@@ -122,12 +123,12 @@ INSERT INTO Styles (StyleCode, StyleName, Description, Category, EstimatedTimePe
 ('ST002', 'Denim Jeans Regular', 'Regular fit denim jeans', 'Jeans', 45, 'Denim fabric, Zippers, Buttons, Thread'),
 ('ST003', 'Silk Evening Dress', 'Elegant silk evening dress', 'Dress', 120, 'Silk fabric, Lining, Zippers, Thread');
 
-INSERT INTO Machines (MachineCode, MachineName, MachineType, Status, Location) VALUES
-('MC001', 'Singer Industrial 1', 'Sewing', 'Available', 'Floor A - Section 1'),
-('MC002', 'Singer Industrial 2', 'Sewing', 'Available', 'Floor A - Section 1'),
-('MC003', 'Overlock Machine 1', 'Finishing', 'Available', 'Floor A - Section 2'),
-('MC004', 'Cutting Machine 1', 'Cutting', 'Available', 'Floor B - Cutting'),
-('MC005', 'Button Hole Machine', 'Finishing', 'Maintenance', 'Floor A - Section 3');
+INSERT INTO Machines (MachineCode, MachineName, MachineType, Status, Location, CapacityPerHour) VALUES
+('MC001', 'Singer Industrial 1', 'Sewing', 'Available', 'Floor A - Section 1', 40),
+('MC002', 'Singer Industrial 2', 'Sewing', 'Available', 'Floor A - Section 1', 40),
+('MC003', 'Overlock Machine 1', 'Finishing', 'Available', 'Floor A - Section 2', 60),
+('MC004', 'Cutting Machine 1', 'Cutting', 'Available', 'Floor B - Cutting', 120),
+('MC005', 'Button Hole Machine', 'Finishing', 'Maintenance', 'Floor A - Section 3', 90);
 
 INSERT INTO ProductionOrders (OrderCode, StyleID, ClientName, TotalQuantity, StartDate, DeadlineDate, Priority) VALUES
 ('ORD001', 1, 'Fashion Forward Ltd', 1000, GETDATE(), DATEADD(day, 15, GETDATE()), 'High'),
@@ -135,6 +136,7 @@ INSERT INTO ProductionOrders (OrderCode, StyleID, ClientName, TotalQuantity, Sta
 ('ORD003', 3, 'Elite Boutique', 50, GETDATE(), DATEADD(day, 10, GETDATE()), 'High');
 
 PRINT '✅ Sample data inserted';
+GO
 
 -- Create Views for Planning Manager Dashboard
 CREATE VIEW vw_ProductionOverview AS
@@ -152,6 +154,7 @@ SELECT
 FROM ProductionOrders po
 JOIN Styles s ON po.StyleID = s.StyleID
 WHERE po.Status != 'Cancelled';
+GO
 
 CREATE VIEW vw_MachineStatus AS
 SELECT 
@@ -167,6 +170,7 @@ FROM Machines m
 LEFT JOIN MachineAllocations ma ON m.MachineID = ma.MachineID AND ma.Status = 'Active'
 LEFT JOIN Employees e ON ma.EmployeeID = e.EmployeeID
 LEFT JOIN ProductionOrders po ON ma.OrderID = po.OrderID;
+GO
 
 CREATE VIEW vw_DailyProductionSummary AS
 SELECT 
@@ -184,6 +188,7 @@ JOIN Machines m ON dp.MachineID = m.MachineID
 JOIN ProductionOrders po ON dp.OrderID = po.OrderID
 JOIN Styles s ON po.StyleID = s.StyleID
 GROUP BY dp.ProductionDate, e.Name, m.MachineName, po.OrderCode, s.StyleName, dp.QualityStatus;
+GO
 
 CREATE VIEW vw_QualityInspectionSummary AS
 SELECT 
@@ -202,7 +207,9 @@ JOIN ProductionOrders po ON dp.OrderID = po.OrderID
 JOIN Styles s ON po.StyleID = s.StyleID
 GROUP BY qi.InspectionDate, e.Name, po.OrderCode, s.StyleName;
 
+GO
 PRINT '✅ Views created for dashboards';
+GO
 
 -- Create Stored Procedures
 CREATE PROCEDURE sp_AllocateMachineToEmployee
@@ -273,9 +280,11 @@ BEGIN
         Notes = @Notes
     WHERE TaskID = @TaskID;
     
-    -- Record daily production
-    INSERT INTO DailyProduction (TaskID, EmployeeID, MachineID, OrderID, PiecesCompleted, ShiftTime)
-    SELECT @TaskID, @EmployeeID, @MachineID, @OrderID, @PiecesCompleted, ma.ShiftTime
+    -- Record daily production. Recorded output goes straight onto the quality
+    -- queue: without this the QualityStatus default of 'Pending' means a batch
+    -- never appears in /quality/pending, which filters on 'ReadyForInspection'.
+    INSERT INTO DailyProduction (TaskID, EmployeeID, MachineID, OrderID, PiecesCompleted, ShiftTime, QualityStatus)
+    SELECT @TaskID, @EmployeeID, @MachineID, @OrderID, @PiecesCompleted, ma.ShiftTime, 'ReadyForInspection'
     FROM MachineAllocations ma WHERE AllocationID = @AllocationID;
     
     -- Update order completion

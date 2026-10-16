@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './QualityManagement.css';
+import { authHeaders } from '../../services/api';
+
+// Routed through the API gateway, which proxies /api/production to the
+// production-planning service. Override with REACT_APP_API_BASE if the
+// gateway is not on localhost.
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000/api';
 
 const QualityManagement = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -20,7 +26,7 @@ const QualityManagement = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:5004/api/quality/dashboard');
+      const response = await fetch(`${API_BASE}/production/quality/dashboard`, { headers: authHeaders() });
       const data = await response.json();
       if (data.success) {
         setDashboardData(data.data);
@@ -33,7 +39,7 @@ const QualityManagement = () => {
 
   const fetchQualityReports = async () => {
     try {
-      const response = await fetch('http://localhost:5004/api/quality/reports');
+      const response = await fetch(`${API_BASE}/production/quality/reports`, { headers: authHeaders() });
       const data = await response.json();
       if (data.success) {
         setQualityReports(data.data);
@@ -45,9 +51,9 @@ const QualityManagement = () => {
 
   const startInspection = async (inspectionId) => {
     try {
-      const response = await fetch('http://localhost:5004/api/quality/start-inspection', {
+      const response = await fetch(`${API_BASE}/production/quality/start-inspection`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           inspection_id: inspectionId,
           inspector_id: 1 // Replace with actual inspector ID
@@ -64,9 +70,9 @@ const QualityManagement = () => {
 
   const completeInspection = async () => {
     try {
-      const response = await fetch('http://localhost:5004/api/quality/complete-inspection', {
+      const response = await fetch(`${API_BASE}/production/quality/complete-inspection`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(inspectionForm)
       });
       

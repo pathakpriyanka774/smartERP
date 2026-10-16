@@ -7,14 +7,22 @@
     "start:auth": "node services/auth-service/server.js",
     "start:orders": "node services/order-service/server.js",
     "start:inventory": "node services/inventory-service/server.js",
-    "start:production": "node services/production-service/server.js",
     "start:finance": "node services/finance-service/server.js",
     "start:clients": "node services/client-service/server.js",
     "start:reports": "node services/report-service/server.js",
     "start:payroll": "node services/payroll-service/server.js",
     "start:production-planning": "node services/production-planning-service/server.js",
     "start:costing": "node services/costing-service/server.js",
-    "start:all": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:orders\" \"npm run start:inventory\" \"npm run start:production\" \"npm run start:finance\" \"npm run start:clients\" \"npm run start:reports\" \"npm run start:payroll\" \"npm run start:production-planning\" \"npm run start:costing\""
+    "start:attendance": "node services/attendance-service/server.js",
+    "start:builder": "node services/page-builder-service/server.js",
+    "start:accounting": "node services/accounting-service/server.js",
+    "start:purchases": "node services/purchase-service/server.js",
+    "start:all": "concurrently \"npm run start:gateway\" \"npm run start:auth\" \"npm run start:orders\" \"npm run start:inventory\" \"npm run start:finance\" \"npm run start:clients\" \"npm run start:reports\" \"npm run start:payroll\" \"npm run start:production-planning\" \"npm run start:costing\" \"npm run start:attendance\" \"npm run start:builder\" \"npm run start:accounting\" \"npm run start:purchases\"",
+    "test": "node --test --test-concurrency=1 tests/integration.test.js",
+    "db:migrate": "node ../setup-database.js",
+    "db:status": "node ../setup-database.js --status",
+    "db:backup": "node ../scripts/backup-database.js --keep 30",
+    "db:restore": "node ../scripts/restore-database.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -24,7 +32,7 @@
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.9",
     "jsonwebtoken": "^9.0.2",
-    "mssql": "^11.0.1"
+    "pg": "^8.23.0"
   },
   "keywords": [
     "erp",
@@ -33,5 +41,8 @@
     "express"
   ],
   "author": "ERP Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mssql": "^11.0.2"
+  }
 }

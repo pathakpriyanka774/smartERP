@@ -50,3 +50,7 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Database backups contain personal and business data: never commit them.
+backups/
+*.dump

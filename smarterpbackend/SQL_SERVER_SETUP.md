@@ -1,10 +1,16 @@
 # SQL Server Setup Guide for SmartERP
 
+> **Note:** the Windows-specific instructions below (services.msc, SQL Server
+> Configuration Manager, SSMS) apply only to a Windows host. On Linux or macOS,
+> use the Docker container documented in `README.md` and then run
+> `node ../setup-database.js`. Windows Authentication is not available off
+> Windows, so `DB_USER`/`DB_PASSWORD` must be set in `.env`.
+
 ## Current Status
 ✅ mssql package installed  
 ✅ Database connection files created  
-✅ Environment configuration ready  
-❌ SQL Server connection not working  
+✅ Environment configuration ready (`.env.example` → `.env`)  
+✅ SQL Server connection working (SQL Server 2022 via Docker)  
 
 ## Step 1: Configure SQL Server
 

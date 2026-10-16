@@ -157,3 +157,10 @@
 .sub-nav-item.active {
   background-color: #3d5a7a;
 }
+
+.nav-empty {
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.75;
+}

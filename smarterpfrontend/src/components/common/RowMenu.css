@@ -1,0 +1,48 @@
+/* "More ▾" row-action menu. Fixed-positioned so scrolling tables cannot clip it. */
+.row-menu { position: relative; display: inline-block; }
+
+.row-menu-toggle {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid #cfd8e3;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0A2540;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.row-menu-toggle:hover:not(:disabled) { border-color: #E85D26; color: #E85D26; }
+.row-menu-toggle:focus-visible { outline: 2px solid #E85D26; outline-offset: 2px; }
+.row-menu-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.row-menu-list {
+  position: fixed;
+  z-index: 1000;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(10, 37, 64, 0.15);
+}
+
+.row-menu-list button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #0A2540;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.row-menu-list button:hover,
+.row-menu-list button:focus-visible { background: #f3f6f9; outline: none; }
+.row-menu-list button.danger { color: #c62828; }
+.row-menu-list button.danger:hover { background: #fdecec; }

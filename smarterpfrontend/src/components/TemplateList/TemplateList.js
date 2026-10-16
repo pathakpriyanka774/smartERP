@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './TemplateList.css';
+import { COMPANY, BUYER_GSTIN_PLACEHOLDER } from '../../config/companyProfile';
 
 const TemplateList = () => {
   const [templates, setTemplates] = useState([]);
@@ -107,19 +108,21 @@ const TemplateList = () => {
   };
 
   const renderTemplatePreview = (template) => {
+    // Preview data: the seller from the company profile (placeholders until
+    // configured) and a fictional buyer. Real third-party details used to be here.
     const sampleData = {
-      companyName: 'RADHA KRISHN EXPORT',
-      companyAddress: 'C-49\nSECTOR 38\nNoida Uttar Pradesh 201305\nIndia',
-      gstin: 'GSTIN 09CJPG2343K1Z6',
-      phone: '8057563842',
-      email: 'radhakrishnexport123@gmail.com',
-      website: 'www.radhakrishnexport.com',
-      invoiceNo: 'RK-484',
-      invoiceDate: '15/05/2025',
-      placeOfSupply: 'Uttar Pradesh (09)',
-      clientName: 'PARAMOUNT PRODUCTS PVT LTD',
-      clientAddress: 'C-90\nHOSIERY COMPLEX PHASE-2,\nNOIDA\n201305 Uttar Pradesh\nIndia',
-      clientGstin: 'GSTIN 09AACCP1238T26'
+      companyName: COMPANY.name,
+      companyAddress: COMPANY.addressLines.join('\n'),
+      gstin: `GSTIN ${COMPANY.gstin}`,
+      phone: COMPANY.phone,
+      email: COMPANY.email,
+      website: COMPANY.website,
+      invoiceNo: 'INV-0001',
+      invoiceDate: '01/04/2026',
+      placeOfSupply: COMPANY.placeOfSupply,
+      clientName: 'Sample Customer Pvt Ltd',
+      clientAddress: '[Buyer address line 1]\n[City, State PIN]\nIndia',
+      clientGstin: `GSTIN ${BUYER_GSTIN_PLACEHOLDER}`
     };
 
     if (template.layout === 'gst-invoice') {
@@ -240,10 +243,10 @@ const TemplateList = () => {
           
           <div className="gst-footer">
             <div className="gst-bank">
-              <strong>BANK NAME : CANARA BANK</strong><br/>
-              <strong>A/C NO. : 1200356138778</strong><br/>
-              <strong>IFSC CODE : CNRB0007820</strong><br/><br/>
-              <strong>E-WAY BILL NO. : 491622361563</strong>
+              <strong>BANK NAME : {COMPANY.bank.name}</strong><br/>
+              <strong>A/C NO. : {COMPANY.bank.account}</strong><br/>
+              <strong>IFSC CODE : {COMPANY.bank.ifsc}</strong><br/><br/>
+              <strong>E-WAY BILL NO. : ____________</strong>
             </div>
             <div className="gst-signature">
               <strong>Authorised Signature</strong>

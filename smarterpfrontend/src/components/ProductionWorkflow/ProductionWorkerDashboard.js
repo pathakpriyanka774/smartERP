@@ -1,308 +1,144 @@
-import React, { useState, useEffect } from 'react';
-import './ProductionWorkflow.css';
+import React, { useCallback, useEffect, useState } from 'react';
+import { productionAPI } from '../../services/api';
+import { formatNumber, formatDate, todayIST, errorMessage } from '../../utils/format';
+import '../ProductionPlanning/ProductionBoard.css';
+
+/**
+ * Shop-floor screen: today's targets and recording finished pieces.
+ *
+ * Built for phones and tablets on the factory floor (large buttons). Uses
+ * productionAPI with the logged-in user's token; it previously called the
+ * service port without one, so it always showed "No tasks", and it greeted
+ * everyone as a hard-coded "John Doe".
+ */
+
+const currentUser = () => {
+  try { return JSON.parse(localStorage.getItem('currentUser')) || null; } catch { return null; }
+};
 
 const ProductionWorkerDashboard = () => {
-  const [todayTasks, setTodayTasks] = useState([]);
-  const [showRecordModal, setShowRecordModal] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [productionForm, setProductionForm] = useState({
-    piecesCompleted: 0,
-    notes: ''
-  });
-  const [currentUser] = useState({ id: 1, name: 'John Doe' }); // Should come from auth context
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [busy, setBusy] = useState(null);           // task id being saved
+  const [pieces, setPieces] = useState({});
+  const user = currentUser();
 
-  useEffect(() => {
-    loadTodayTasks();
-    const interval = setInterval(loadTodayTasks, 60000); // Refresh every minute
-    return () => clearInterval(interval);
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await productionAPI.getTodayTasks();
+      setTasks(res.data.data || []);
+    } catch (err) {
+      setError(errorMessage(err, "Could not load today's tasks"));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadTodayTasks = async () => {
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 60000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const record = async (task) => {
+    const n = Number(pieces[task.TaskID]);
+    const remaining = task.TargetPieces - task.CompletedPieces;
+    if (!Number.isInteger(n) || n < 1 || n > remaining) {
+      setNotice({ type: 'error', text: `Enter between 1 and ${remaining} pieces` });
+      return;
+    }
+    setBusy(task.TaskID);
+    setNotice(null);
     try {
-      const response = await fetch('http://localhost:5009/tasks/today');
-      const result = await response.json();
-      if (result.success) {
-        // Filter tasks for current user (in real app, this would be done on backend)
-        setTodayTasks(result.data);
-      }
-    } catch (error) {
-      console.error('Error loading today tasks:', error);
+      await productionAPI.recordProduction({ taskId: task.TaskID, piecesCompleted: n });
+      setNotice({ type: 'success', text: `${n} pieces recorded on ${task.MachineName}` });
+      setPieces(p => ({ ...p, [task.TaskID]: '' }));
+      load();
+    } catch (err) {
+      setNotice({ type: 'error', text: errorMessage(err, 'Could not record the pieces') });
+    } finally {
+      setBusy(null);
     }
   };
 
-  const handleProductionRecord = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('http://localhost:5009/production/record', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: selectedTask.TaskID,
-          piecesCompleted: productionForm.piecesCompleted,
-          notes: productionForm.notes
-        })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        setShowRecordModal(false);
-        setSelectedTask(null);
-        setProductionForm({ piecesCompleted: 0, notes: '' });
-        loadTodayTasks();
-        alert('Production recorded successfully!');
-      }
-    } catch (error) {
-      console.error('Error recording production:', error);
-      alert('Error recording production');
-    }
-  };
-
-  const startRecording = (task) => {
-    setSelectedTask(task);
-    setProductionForm({ piecesCompleted: 0, notes: '' });
-    setShowRecordModal(true);
-  };
-
-  const getTaskProgress = (task) => {
-    return Math.min((task.CompletedPieces / task.TargetPieces) * 100, 100);
-  };
-
-  const getTaskStatus = (task) => {
-    const progress = getTaskProgress(task);
-    if (progress === 100) return 'completed';
-    if (progress > 0) return 'in-progress';
-    return 'pending';
-  };
+  const totalTarget = tasks.reduce((a, t) => a + t.TargetPieces, 0);
+  const totalDone = tasks.reduce((a, t) => a + t.CompletedPieces, 0);
+  const sorted = [...tasks].sort((a, b) => String(a.MachineName).localeCompare(String(b.MachineName)));
 
   return (
-    <div className="worker-dashboard">
-      <div className="dashboard-header">
-        <h1>👷 Production Worker Dashboard</h1>
-        <div className="worker-info">
-          <span>Welcome, <strong>{currentUser.name}</strong></span>
-          <span className="date">{new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</span>
+    <div className="prb">
+      <div className="prb-header">
+        <div>
+          <h1>Today on the floor</h1>
+          <p className="prb-muted">
+            {user?.name ? `Signed in as ${user.name}. ` : ''}{formatDate(todayIST())} · Tasks for the whole floor are shown,
+            because user accounts are not yet linked to employee records.
+          </p>
         </div>
+        <button type="button" className="prb-btn" onClick={load}>Refresh</button>
       </div>
 
-      {/* Daily Summary */}
-      <div className="daily-summary">
-        <div className="summary-card">
-          <div className="summary-icon">📋</div>
-          <div className="summary-content">
-            <h3>Today's Tasks</h3>
-            <div className="summary-value">{todayTasks.length}</div>
-          </div>
+      {notice && (
+        <div className={`prb-notice prb-notice-${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>
+          <span>{notice.text}</span>
+          <button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}>×</button>
         </div>
-        <div className="summary-card">
-          <div className="summary-icon">🎯</div>
-          <div className="summary-content">
-            <h3>Target Pieces</h3>
-            <div className="summary-value">
-              {todayTasks.reduce((sum, task) => sum + task.TargetPieces, 0)}
-            </div>
-          </div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-icon">✅</div>
-          <div className="summary-content">
-            <h3>Completed Pieces</h3>
-            <div className="summary-value">
-              {todayTasks.reduce((sum, task) => sum + task.CompletedPieces, 0)}
-            </div>
-          </div>
-        </div>
-        <div className="summary-card">
-          <div className="summary-icon">📊</div>
-          <div className="summary-content">
-            <h3>Overall Progress</h3>
-            <div className="summary-value">
-              {todayTasks.length > 0 ? Math.round(
-                (todayTasks.reduce((sum, task) => sum + task.CompletedPieces, 0) /
-                 todayTasks.reduce((sum, task) => sum + task.TargetPieces, 0)) * 100
-              ) : 0}%
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
-      {/* Task List */}
-      <div className="tasks-section">
-        <h2>📋 Today's Production Tasks</h2>
-        <div className="tasks-grid">
-          {todayTasks.map(task => {
-            const progress = getTaskProgress(task);
-            const status = getTaskStatus(task);
-            
-            return (
-              <div key={task.TaskID} className={`task-card ${status}`}>
-                <div className="task-header">
-                  <div className="task-info">
-                    <h3>{task.StyleName}</h3>
-                    <p className="order-code">Order: {task.OrderCode}</p>
+      {loading ? (
+        <div className="prb-state">Loading today's tasks…</div>
+      ) : error ? (
+        <div className="prb-state prb-state-error" role="alert">
+          <p>{error}</p>
+          <button type="button" className="prb-btn" onClick={load}>Try again</button>
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="prb-state">No targets have been set for today yet. Your supervisor sets them on the planning board.</div>
+      ) : (
+        <>
+          <div className="prb-cards">
+            <div className="prb-card"><div className="prb-card-label">Tasks</div><div className="prb-card-value">{tasks.length}</div></div>
+            <div className="prb-card"><div className="prb-card-label">Target</div><div className="prb-card-value">{formatNumber(totalTarget, { decimals: 0 })}</div></div>
+            <div className="prb-card"><div className="prb-card-label">Done</div><div className="prb-card-value">{formatNumber(totalDone, { decimals: 0 })}</div></div>
+            <div className="prb-card"><div className="prb-card-label">Progress</div><div className="prb-card-value">{totalTarget ? Math.round((totalDone / totalTarget) * 100) : 0}%</div></div>
+          </div>
+
+          <div className="prb-worker-tasks">
+            {sorted.map(t => {
+              const remaining = t.TargetPieces - t.CompletedPieces;
+              const pct = t.TargetPieces ? Math.min((t.CompletedPieces / t.TargetPieces) * 100, 100) : 0;
+              return (
+                <div className="prb-worker-task" key={t.TaskID}>
+                  <h3>{t.MachineName}</h3>
+                  <span className="prb-muted">{t.EmployeeName} · {t.OrderCode} · {t.StyleName} · {t.ShiftTime}</span>
+                  <div className="prb-worker-figures">
+                    <span>Done <strong>{formatNumber(t.CompletedPieces, { decimals: 0 })}</strong></span>
+                    <span>Target <strong>{formatNumber(t.TargetPieces, { decimals: 0 })}</strong></span>
                   </div>
-                  <div className={`task-status ${status}`}>
-                    {status === 'completed' && '✅'}
-                    {status === 'in-progress' && '🔄'}
-                    {status === 'pending' && '⏳'}
+                  <div className="prb-progress" role="img" aria-label={`${Math.round(pct)}% of target`}>
+                    <span style={{ width: `${pct}%` }} />
                   </div>
-                </div>
-                
-                <div className="task-details">
-                  <div className="detail-row">
-                    <span>Machine:</span>
-                    <strong>{task.MachineName}</strong>
-                  </div>
-                  <div className="detail-row">
-                    <span>Shift:</span>
-                    <strong>{task.ShiftTime}</strong>
-                  </div>
-                  <div className="detail-row">
-                    <span>Target:</span>
-                    <strong>{task.TargetPieces} pieces</strong>
-                  </div>
-                  <div className="detail-row">
-                    <span>Completed:</span>
-                    <strong>{task.CompletedPieces} pieces</strong>
-                  </div>
-                </div>
-                
-                <div className="task-progress">
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{width: `${progress}%`}}
-                    ></div>
-                  </div>
-                  <span className="progress-text">{Math.round(progress)}% Complete</span>
-                </div>
-                
-                <div className="task-actions">
-                  {status !== 'completed' && (
-                    <button 
-                      className="btn-record"
-                      onClick={() => startRecording(task)}
-                    >
-                      📝 Record Production
-                    </button>
-                  )}
-                  {status === 'completed' && (
-                    <span className="completed-badge">✅ Task Completed</span>
+                  {remaining > 0 ? (
+                    <div className="prb-worker-record">
+                      <label htmlFor={`pcs-${t.TaskID}`} className="sr-only">Pieces finished on {t.MachineName}</label>
+                      <input id={`pcs-${t.TaskID}`} type="number" inputMode="numeric" min="1" max={remaining} step="1"
+                             placeholder={`Pieces (≤ ${remaining})`} value={pieces[t.TaskID] || ''}
+                             onChange={e => setPieces(p => ({ ...p, [t.TaskID]: e.target.value }))} />
+                      <button type="button" className="prb-btn prb-btn-primary" disabled={busy === t.TaskID} onClick={() => record(t)}>
+                        {busy === t.TaskID ? 'Saving…' : 'Record'}
+                      </button>
+                    </div>
+                  ) : (
+                    <strong style={{ color: '#146B3A' }}>Target met ✓</strong>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        {todayTasks.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">📋</div>
-            <h3>No Tasks Assigned</h3>
-            <p>No production tasks have been assigned for today. Please check with your supervisor.</p>
+              );
+            })}
           </div>
-        )}
-      </div>
-
-      {/* Production Tips */}
-      <div className="tips-section">
-        <h2>💡 Production Tips</h2>
-        <div className="tips-grid">
-          <div className="tip-card">
-            <div className="tip-icon">⚡</div>
-            <h3>Efficiency Tips</h3>
-            <ul>
-              <li>Keep your workspace organized</li>
-              <li>Check machine settings before starting</li>
-              <li>Take regular breaks to maintain quality</li>
-            </ul>
-          </div>
-          <div className="tip-card">
-            <div className="tip-icon">🔍</div>
-            <h3>Quality Focus</h3>
-            <ul>
-              <li>Inspect each piece before completion</li>
-              <li>Report any material defects immediately</li>
-              <li>Follow the style specifications exactly</li>
-            </ul>
-          </div>
-          <div className="tip-card">
-            <div className="tip-icon">🛡️</div>
-            <h3>Safety First</h3>
-            <ul>
-              <li>Always wear safety equipment</li>
-              <li>Keep fingers away from moving parts</li>
-              <li>Report any machine issues immediately</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Production Recording Modal */}
-      {showRecordModal && selectedTask && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>📝 Record Production - {selectedTask.StyleName}</h3>
-            <div className="task-summary">
-              <div className="summary-row">
-                <span>Order:</span> <strong>{selectedTask.OrderCode}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Machine:</span> <strong>{selectedTask.MachineName}</strong>
-              </div>
-              <div className="summary-row">
-                <span>Target:</span> <strong>{selectedTask.TargetPieces} pieces</strong>
-              </div>
-              <div className="summary-row">
-                <span>Already Completed:</span> <strong>{selectedTask.CompletedPieces} pieces</strong>
-              </div>
-              <div className="summary-row">
-                <span>Remaining:</span> <strong>{selectedTask.TargetPieces - selectedTask.CompletedPieces} pieces</strong>
-              </div>
-            </div>
-            
-            <form onSubmit={handleProductionRecord}>
-              <div className="form-group">
-                <label>Pieces Completed Now</label>
-                <input
-                  type="number"
-                  value={productionForm.piecesCompleted}
-                  onChange={(e) => setProductionForm({
-                    ...productionForm, 
-                    piecesCompleted: parseInt(e.target.value) || 0
-                  })}
-                  min="1"
-                  max={selectedTask.TargetPieces - selectedTask.CompletedPieces}
-                  required
-                />
-                <small>Maximum: {selectedTask.TargetPieces - selectedTask.CompletedPieces} pieces</small>
-              </div>
-              
-              <div className="form-group">
-                <label>Notes (Optional)</label>
-                <textarea
-                  value={productionForm.notes}
-                  onChange={(e) => setProductionForm({...productionForm, notes: e.target.value})}
-                  rows="3"
-                  placeholder="Any issues, observations, or comments..."
-                />
-              </div>
-              
-              <div className="form-actions">
-                <button type="submit" className="btn-primary">
-                  ✅ Record Production
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => setShowRecordModal(false)}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

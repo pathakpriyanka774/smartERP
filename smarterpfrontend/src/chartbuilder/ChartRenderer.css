@@ -1,0 +1,53 @@
+/* Create Charts renderer. Text uses ink tokens (see pagebuilder/palette.js INK);
+   only marks carry series colour. */
+
+.cr-frame { display: flex; flex-direction: column; gap: 10px; }
+
+.cr-plot { position: relative; }
+
+.cr-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.cr-svg-pie { max-width: 320px; margin: 0 auto; }
+
+.cr-tick { font-size: 11px; fill: #8a8f98; }
+.cr-cat { font-size: 12px; fill: #5a6270; }
+.cr-value { font-size: 11px; font-weight: 600; fill: #1f2328; }
+.cr-axis-title { font-size: 12px; font-weight: 500; fill: #5a6270; }
+.cr-total { font-size: 26px; font-weight: 600; fill: #1f2328; }
+.cr-total-label { font-size: 11px; letter-spacing: .08em; fill: #8a8f98; }
+
+.cr-empty {
+  padding: 48px 16px; text-align: center; color: #8a8f98; font-size: 14px;
+  border: 1px dashed #e6e8eb; border-radius: 8px;
+}
+
+.cr-tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: #1f2328; color: #fff; border-radius: 6px; padding: 8px 10px;
+  font-size: 12px; line-height: 1.5; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  display: flex; flex-direction: column; min-width: 120px; white-space: nowrap;
+}
+.cr-tip strong { font-weight: 600; margin-bottom: 2px; }
+.cr-tip-row { display: flex; align-items: center; gap: 6px; }
+.cr-tip-row i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.cr-tip-row em { font-style: normal; opacity: .8; }
+.cr-tip-row b { margin-left: auto; font-weight: 600; }
+
+.cr-legend {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #1f2328;
+}
+.cr-legend li { display: flex; align-items: center; gap: 6px; }
+.cr-legend b { font-weight: 600; color: #5a6270; }
+.cr-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+
+.cr-toggle {
+  align-self: flex-start; background: none; border: none; padding: 2px 0;
+  color: #2B8BC4; font-size: 12px; cursor: pointer; text-decoration: underline;
+}
+
+.cr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cr-table th, .cr-table td { padding: 7px 10px; border-bottom: 1px solid #e6e8eb; text-align: left; }
+.cr-table th { color: #5a6270; font-weight: 600; background: #f8f9fa; }
+.cr-table td:not(:first-child), .cr-table th:not(:first-child) {
+  text-align: right; font-variant-numeric: tabular-nums;
+}

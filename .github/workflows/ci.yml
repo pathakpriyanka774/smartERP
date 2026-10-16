@@ -1,0 +1,63 @@
+# Runs the backend integration tests against a throwaway PostgreSQL service,
+# and the frontend unit tests and production build, on every push and PR.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: smarterp
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: smarterp_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U smarterp"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: smarterpbackend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: smarterpbackend/package-lock.json
+      - name: Install PostgreSQL client tools (backup/restore tests)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client-16 || sudo apt-get install -y postgresql-client
+      - run: npm ci
+      - name: Integration tests
+        env:
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 5432
+          TEST_DB_NAME: smarterp_test
+          TEST_DB_USER: smarterp
+          TEST_DB_PASSWORD: ci-only-password
+        run: npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: smarterpfrontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: smarterpfrontend/package-lock.json
+      - run: npm ci
+      - run: npm test -- --watchAll=false
+        env:
+          CI: true
+      - run: npm run build
+        env:
+          CI: false

@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './ProductionPlanning.css';
+import { authHeaders } from '../../services/api';
+
+// Routed through the API gateway, which proxies /api/production to the
+// production-planning service. Override with REACT_APP_API_BASE if the
+// gateway is not on localhost.
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000/api';
 
 const ProductionPlanning = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,7 +22,7 @@ const ProductionPlanning = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:5004/api/planning/dashboard');
+      const response = await fetch(`${API_BASE}/production/planning/summary`, { headers: authHeaders() });
       const data = await response.json();
       if (data.success) {
         setDashboardData(data.data);
@@ -28,7 +34,7 @@ const ProductionPlanning = () => {
 
   const fetchEmployeePerformance = async () => {
     try {
-      const response = await fetch(`http://localhost:5004/api/planning/employee-performance?date=${selectedDate}`);
+      const response = await fetch(`${API_BASE}/production/planning/employee-performance?date=${selectedDate}`, { headers: authHeaders() });
       const data = await response.json();
       if (data.success) {
         setEmployeePerformance(data.data);
@@ -40,7 +46,7 @@ const ProductionPlanning = () => {
 
   const fetchMachineAvailability = async () => {
     try {
-      const response = await fetch(`http://localhost:5004/api/planning/machine-availability?date=${selectedDate}`);
+      const response = await fetch(`${API_BASE}/production/planning/machine-availability?date=${selectedDate}`, { headers: authHeaders() });
       const data = await response.json();
       if (data.success) {
         setMachineAvailability(data.data);

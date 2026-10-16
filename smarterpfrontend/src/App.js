@@ -16,21 +16,45 @@ import TemplateBuilder from './components/TemplateBuilder/TemplateBuilder';
 import TemplateList from './components/TemplateList/TemplateList';
 import Workflows from './components/Workflows/Workflows';
 import Login from './components/Auth/Login';
+import { authAPI, clearSession } from './services/api';
 import Signup from './components/Auth/Signup';
 import PlanningDashboard from './components/ProductionPlanning/PlanningDashboard';
 import ProductionWorkerDashboard from './components/ProductionWorkflow/ProductionWorkerDashboard';
 import QualityDashboard from './components/QualityManagement/QualityDashboard';
 import StyleCosting from './components/StyleCosting/StyleCosting';
+import Attendance from './components/Attendance/Attendance';
+import CustomPage from './components/CustomPage';
+import RequirePermission from './components/RequirePermission';
+import Invoices from './components/Invoices/Invoices';
+import Purchases from './components/Purchases/Purchases';
+import Accounting from './components/Accounting/Accounting';
+import CompanySettings from './components/CompanySettings/CompanySettings';
+import AuditLog from './components/AuditLog/AuditLog';
+import { landingPath } from './config/menuConfig';
 
 function App() {
     const [user, setUser] = useState(null);
     const [authMode, setAuthMode] = useState('login');
 
     useEffect(() => {
-        const currentUser = localStorage.getItem('currentUser');
-        if (currentUser) {
-            setUser(JSON.parse(currentUser));
-        }
+        const stored = localStorage.getItem('currentUser');
+        if (!stored) return;
+        setUser(JSON.parse(stored));
+
+        // Re-read the account from the server on load. A stored login can be
+        // stale — permissions changed, role changed, account deactivated — and
+        // trusting the cached copy would show a menu the server will refuse.
+        authAPI.session()
+            .then(res => {
+                const { user: fresh, token } = res.data;
+                localStorage.setItem('currentUser', JSON.stringify(fresh));
+                localStorage.setItem('token', token);
+                setUser(fresh);
+            })
+            .catch(() => {
+                clearSession();
+                setUser(null);
+            });
     }, []);
 
     const handleLogin = (userData) => {
@@ -42,8 +66,12 @@ function App() {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('currentUser');
-        setUser(null);
+        // Revoke on the server first (ends the session everywhere), then drop
+        // the token here. A failed call still signs this browser out.
+        authAPI.logout().catch(() => {}).finally(() => {
+            clearSession();
+            setUser(null);
+        });
     };
 
     if (!user) {
@@ -73,31 +101,40 @@ function App() {
                 <Sidebar user={user} onLogout={handleLogout} />
                 <div className="main-content">
                     <Routes>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/orders" element={<Orders />} />
-                        <Route path="/inventory" element={<Inventory />} />
-                        <Route path="/production" element={<Production />} />
-                        <Route path="/expenses" element={<Expenses />} />
-                        <Route path="/clients" element={<Clients />} />
-                        <Route path="/reports" element={<Reports />} />
-                        <Route path="/payroll" element={<Payroll />} />
+                        <Route path="/" element={<Navigate to={landingPath(user) || '/dashboard'} replace />} />
+                        <Route path="/dashboard" element={<RequirePermission user={user} menuKey="dashboard"><Dashboard /></RequirePermission>} />
+                        <Route path="/orders" element={<RequirePermission user={user} menuKey="orders"><Orders /></RequirePermission>} />
+                        <Route path="/inventory" element={<RequirePermission user={user} menuKey="inventory"><Inventory /></RequirePermission>} />
+                        <Route path="/production" element={<RequirePermission user={user} menuKey="production"><Production /></RequirePermission>} />
+                        <Route path="/expenses" element={<RequirePermission user={user} menuKey="expenses"><Expenses /></RequirePermission>} />
+                        <Route path="/clients" element={<RequirePermission user={user} menuKey="clients"><Clients /></RequirePermission>} />
+                        <Route path="/reports" element={<RequirePermission user={user} menuKey="reports"><Reports /></RequirePermission>} />
+                        <Route path="/payroll" element={<RequirePermission user={user} menuKey="payroll"><Payroll /></RequirePermission>} />
                         <Route path="/workflows" element={<Workflows />} />
-                        <Route path="/form-builder" element={<ApplicationSettings activeSection="form-builder" />} />
-                        <Route path="/page-builder" element={<ApplicationSettings activeSection="page-builder" />} />
-                        <Route path="/menu-manager" element={<ApplicationSettings activeSection="menu-manager" />} />
-                        <Route path="/form-rules" element={<ApplicationSettings activeSection="form-rules" />} />
-                        <Route path="/apis" element={<ApplicationSettings activeSection="apis" />} />
+                        <Route path="/form-builder" element={<RequirePermission user={user} menuKey="form-builder"><ApplicationSettings activeSection="form-builder" /></RequirePermission>} />
+                        <Route path="/page-builder" element={<RequirePermission user={user} menuKey="page-builder"><ApplicationSettings activeSection="page-builder" /></RequirePermission>} />
+                        <Route path="/menu-manager" element={<RequirePermission user={user} menuKey="menu-manager"><ApplicationSettings activeSection="menu-manager" /></RequirePermission>} />
+                        <Route path="/form-rules" element={<RequirePermission user={user} menuKey="form-rules"><ApplicationSettings activeSection="form-rules" /></RequirePermission>} />
+                        <Route path="/apis" element={<RequirePermission user={user} menuKey="apis"><ApplicationSettings activeSection="apis" /></RequirePermission>} />
+                        <Route path="/chart-builder" element={<RequirePermission user={user} menuKey="chart-builder"><ApplicationSettings activeSection="chart-builder" /></RequirePermission>} />
                         <Route path="/permissions" element={<ApplicationSettings activeSection="permissions" />} />
                         <Route path="/roles" element={<ApplicationSettings activeSection="roles" />} />
                         <Route path="/templates" element={<ApplicationSettings activeSection="templates" />} />
-                        <Route path="/user-management" element={<UserManagement />} />
-                        <Route path="/template-builder" element={<TemplateBuilder />} />
-                        <Route path="/template-list" element={<TemplateList />} />
-                        <Route path="/planning-dashboard" element={<PlanningDashboard />} />
-                        <Route path="/worker-dashboard" element={<ProductionWorkerDashboard />} />
-                        <Route path="/quality-dashboard" element={<QualityDashboard />} />
-                        <Route path="/style-costing" element={<StyleCosting />} />
+                        <Route path="/user-management" element={<RequirePermission user={user} menuKey="user-management"><UserManagement /></RequirePermission>} />
+                        <Route path="/template-builder" element={<RequirePermission user={user} menuKey="template-builder"><TemplateBuilder /></RequirePermission>} />
+                        <Route path="/template-list" element={<RequirePermission user={user} menuKey="template-list"><TemplateList /></RequirePermission>} />
+                        <Route path="/planning-dashboard" element={<RequirePermission user={user} menuKey="production"><PlanningDashboard /></RequirePermission>} />
+                        <Route path="/worker-dashboard" element={<RequirePermission user={user} menuKey="production"><ProductionWorkerDashboard /></RequirePermission>} />
+                        <Route path="/quality-dashboard" element={<RequirePermission user={user} menuKey="production"><QualityDashboard /></RequirePermission>} />
+                        <Route path="/style-costing" element={<RequirePermission user={user} menuKey="style-costing"><StyleCosting /></RequirePermission>} />
+                        <Route path="/attendance" element={<RequirePermission user={user} menuKey="attendance"><Attendance /></RequirePermission>} />
+                        <Route path="/invoices" element={<RequirePermission user={user} menuKey="invoices"><Invoices /></RequirePermission>} />
+                        <Route path="/purchases" element={<RequirePermission user={user} menuKey="purchases"><Purchases /></RequirePermission>} />
+                        <Route path="/accounting" element={<RequirePermission user={user} menuKey="accounting"><Accounting /></RequirePermission>} />
+                        <Route path="/company-settings" element={<RequirePermission user={user} menuKey="company-settings"><CompanySettings /></RequirePermission>} />
+                        <Route path="/audit-log" element={<RequirePermission user={user} menuKey="audit-log"><AuditLog /></RequirePermission>} />
+                        {/* Client-built pages from the Page Builder. */}
+                        <Route path="/p/:pageKey" element={<CustomPage />} />
                     </Routes>
                 </div>
             </div>

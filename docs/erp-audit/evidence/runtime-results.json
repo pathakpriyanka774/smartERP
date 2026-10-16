@@ -1,0 +1,614 @@
+[
+  {
+    "id": "RT-001",
+    "story": "A",
+    "name": "First signup on empty system becomes Admin",
+    "expected": "role Admin",
+    "actual": "200 role Admin",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-002",
+    "story": "A",
+    "name": "Second signup requesting Admin gets Employee",
+    "expected": "role Employee",
+    "actual": "200 role Employee",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-003",
+    "story": "A",
+    "name": "Admin creates employee user with Orders permission",
+    "expected": "200",
+    "actual": "200",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-004",
+    "story": "A",
+    "name": "Created user can log in; token carries only granted permissions",
+    "expected": "permissions ['orders']",
+    "actual": "[\"orders\"]",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-005",
+    "story": "A",
+    "name": "Create employee (payroll) generates code and CTC",
+    "expected": "EMP001, ctc 216000",
+    "actual": "EMP001, ctc 216000",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-006",
+    "story": "A",
+    "name": "Warehouse setup endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-007",
+    "story": "A",
+    "name": "Tax/currency settings endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-008",
+    "story": "A",
+    "name": "Purchase orders endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-009",
+    "story": "A",
+    "name": "Suppliers endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-010",
+    "story": "A",
+    "name": "Bulk inventory import endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-011",
+    "story": "A",
+    "name": "Departments endpoint exists",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms feature is missing, not a failure of the test"
+  },
+  {
+    "id": "RT-012",
+    "story": "A",
+    "name": "Supplier can only be stored as a client with free-text type",
+    "expected": "accepted as client",
+    "actual": "200 type=supplier",
+    "pass": true,
+    "note": "no supplier entity, no vendor fields"
+  },
+  {
+    "id": "RT-013",
+    "story": "P4",
+    "name": "Reference status counts (In 3 / Low 1 / Out 1)",
+    "expected": "inStock 3, lowStock 1, outOfStock 1",
+    "actual": "inStock 3, lowStock 1, outOfStock 1",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-014",
+    "story": "P4",
+    "name": "Inventory valuation ($85,625) can be computed",
+    "expected": "unit price stored",
+    "actual": "unitPrice silently discarded; no price column in InventoryItems",
+    "pass": false,
+    "note": "valuation unsupported by schema"
+  },
+  {
+    "id": "RT-015",
+    "story": "P4",
+    "name": "Negative quantity rejected",
+    "expected": "400",
+    "actual": "200 quantity=-50 status=out-of-stock",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-016",
+    "story": "C",
+    "name": "Sales user creates order through gateway",
+    "expected": "200 status pending",
+    "actual": "200 pending",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-017",
+    "story": "C",
+    "name": "Order reserves/deducts stock",
+    "expected": "stock changes",
+    "actual": "before 8500, after 8500",
+    "pass": false,
+    "note": "no order lines, no item link"
+  },
+  {
+    "id": "RT-018",
+    "story": "C",
+    "name": "Order creates receivable / revenue entry",
+    "expected": "finance changes",
+    "actual": "income before 15000, after 15000",
+    "pass": false,
+    "note": "orders and finance are not linked"
+  },
+  {
+    "id": "RT-019",
+    "story": "C",
+    "name": "Invalid order status rejected",
+    "expected": "400",
+    "actual": "200 status=banana",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-020",
+    "story": "C",
+    "name": "Negative order amount rejected",
+    "expected": "400",
+    "actual": "200 total=-999",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-021",
+    "story": "C",
+    "name": "Delivery date before order date rejected",
+    "expected": "400",
+    "actual": "200",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-022",
+    "story": "G",
+    "name": "Duplicate submission (double click) creates one order",
+    "expected": "1 order",
+    "actual": "2 orders",
+    "pass": false,
+    "note": "no idempotency key"
+  },
+  {
+    "id": "RT-023",
+    "story": "C",
+    "name": "Order line items / quotation / invoice / payment endpoints",
+    "expected": "not supported (404)",
+    "actual": "404",
+    "pass": true,
+    "note": "confirms missing feature"
+  },
+  {
+    "id": "RT-024",
+    "story": "D",
+    "name": "Allocate machine to employee for production order",
+    "expected": "Success",
+    "actual": "200 Success",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-025",
+    "story": "G",
+    "name": "Concurrent allocation of the same machine",
+    "expected": "exactly 1 succeeds",
+    "actual": "1 succeeded",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-026",
+    "story": "D",
+    "name": "Create daily production task",
+    "expected": "TaskID returned",
+    "actual": "200 TaskID 1",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-027",
+    "story": "D",
+    "name": "Recording production updates task progress",
+    "expected": "CompletedPieces 5080, Completed",
+    "actual": "5080, Completed",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-028",
+    "story": "D",
+    "name": "Over-production beyond target rejected",
+    "expected": "reject 5000 on target 120",
+    "actual": "200 Success",
+    "pass": false,
+    "note": "no upper bound check"
+  },
+  {
+    "id": "RT-029",
+    "story": "D",
+    "name": "Production order completed quantity rolls up",
+    "expected": "+5080 from 0",
+    "actual": "5080 of 1000",
+    "pass": true,
+    "note": "exceeds order total — not capped"
+  },
+  {
+    "id": "RT-030",
+    "story": "D",
+    "name": "Raw material consumed / finished goods added to inventory",
+    "expected": "inventory changes",
+    "actual": "before 8500, after 8500",
+    "pass": false,
+    "note": "production and inventory not linked"
+  },
+  {
+    "id": "RT-031",
+    "story": "D",
+    "name": "Negative production quantity rejected",
+    "expected": "400",
+    "actual": "200 Success",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-032",
+    "story": "D",
+    "name": "Recorded batch appears in quality queue",
+    "expected": ">=1 pending",
+    "actual": "3",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-033",
+    "story": "D",
+    "name": "Inspection where approved+rejected ≠ inspected rejected",
+    "expected": "400",
+    "actual": "200",
+    "pass": false,
+    "note": "inspected 10, approved 50, rejected 40"
+  },
+  {
+    "id": "RT-034",
+    "story": "D",
+    "name": "Production report efficiency = completed/target",
+    "expected": "4233.33 (5080/120)",
+    "actual": "undefined",
+    "pass": false,
+    "note": "value above 100% exposes uncapped over-production; DECIMAL(5,2) holds max 999.99"
+  },
+  {
+    "id": "RT-035",
+    "story": "E",
+    "name": "Mark employee absent",
+    "expected": "200",
+    "actual": "200",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-036",
+    "story": "G",
+    "name": "Concurrent double check-in creates one record",
+    "expected": "1 row, one 409/500",
+    "actual": "rows 1; statuses 409/200",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-037",
+    "story": "E",
+    "name": "Auto-generate payroll for month",
+    "expected": "records created",
+    "actual": "200 {\"RecordsCreated\":2,\"Month\":\"2026-09\"}",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-038",
+    "story": "E",
+    "name": "Payroll reflects attendance (absent day deducted)",
+    "expected": "netSalary < 18000",
+    "actual": "netSalary 18000",
+    "pass": false,
+    "note": "attendance not linked to payroll"
+  },
+  {
+    "id": "RT-039",
+    "story": "E",
+    "name": "Invalid payroll month rejected",
+    "expected": "400",
+    "actual": "200 {\"RecordsCreated\":2,\"Month\":\"banana\"}",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-040",
+    "story": "E",
+    "name": "Negative deduction (inflating pay) rejected",
+    "expected": "400",
+    "actual": "200, netSalary now 23000",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-041",
+    "story": "E",
+    "name": "Partial employee update keeps other fields",
+    "expected": "email/salary kept",
+    "actual": "500; email=op@audit.example, salary=18000.00",
+    "pass": false,
+    "note": "PUT overwrites all columns"
+  },
+  {
+    "id": "RT-042",
+    "story": "F",
+    "name": "Report dashboard revenue = sum of income transactions",
+    "expected": "15000",
+    "actual": "15000",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-043",
+    "story": "F",
+    "name": "Report dashboard total orders = Orders rows",
+    "expected": "7",
+    "actual": "7",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-044",
+    "story": "F",
+    "name": "Active production excludes completed/cancelled",
+    "expected": "3",
+    "actual": "3",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-045",
+    "story": "F",
+    "name": "Orders produced to target leave production order status unchanged",
+    "expected": "auto-complete when completed >= total",
+    "actual": "Pending",
+    "pass": false,
+    "note": "status never transitions automatically"
+  },
+  {
+    "id": "RT-046",
+    "story": "F",
+    "name": "Total sales excludes cancelled orders",
+    "expected": "< 72701",
+    "actual": "200; totalSales 72701",
+    "pass": false,
+    "note": "cancelled orders still counted"
+  },
+  {
+    "id": "RT-047",
+    "story": "F",
+    "name": "Sales report top products is based on sales",
+    "expected": "sales value",
+    "actual": "{\"name\":\"Denim Jeans Regular\",\"sales\":59500}",
+    "pass": false,
+    "note": "computed as production quantity × material cost (report-service), not sales"
+  },
+  {
+    "id": "RT-048",
+    "story": "F",
+    "name": "Monthly revenue chart has 4 months oldest first",
+    "expected": "4 labels",
+    "actual": "[\"2026-07\",\"2026-08\",\"2026-09\",\"2026-10\"]",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-049",
+    "story": "G",
+    "name": "No token → 401",
+    "expected": "401",
+    "actual": "401",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-050",
+    "story": "G",
+    "name": "Orders-only user blocked from payroll at gateway",
+    "expected": "403",
+    "actual": "403",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-051",
+    "story": "G",
+    "name": "Mixed-case prefix /api/Payroll does not bypass permission",
+    "expected": "403/404",
+    "actual": "404 (records: n/a)",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-052",
+    "story": "G",
+    "name": "Direct service port with orders-only token blocked",
+    "expected": "403",
+    "actual": "200 (records: 2)",
+    "pass": false,
+    "note": "services only authenticate; area permission enforced only at gateway"
+  },
+  {
+    "id": "RT-053",
+    "story": "G",
+    "name": "Expired token rejected",
+    "expected": "401",
+    "actual": "401",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-054",
+    "story": "G",
+    "name": "Token signed with wrong secret rejected",
+    "expected": "401",
+    "actual": "401",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-055",
+    "story": "G",
+    "name": "alg:none token rejected",
+    "expected": "401",
+    "actual": "401",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-056",
+    "story": "G",
+    "name": "Deactivated user token stops working immediately",
+    "expected": "401",
+    "actual": "200",
+    "pass": false,
+    "note": "token valid until 24h expiry; no revocation"
+  },
+  {
+    "id": "RT-057",
+    "story": "G",
+    "name": "Deactivated user cannot log in again",
+    "expected": "401",
+    "actual": "401",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-058",
+    "story": "G",
+    "name": "Brute force: 25 wrong passwords trigger throttling",
+    "expected": "429 / lockout",
+    "actual": "no throttling; correct password still 200",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-059",
+    "story": "G",
+    "name": "Malformed JSON returns 400",
+    "expected": "400",
+    "actual": "400",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-060",
+    "story": "G",
+    "name": "Oversized payload rejected",
+    "expected": "413",
+    "actual": "413",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-061",
+    "story": "G",
+    "name": "Over-length field returns 400 (not 500)",
+    "expected": "400",
+    "actual": "500",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-062",
+    "story": "G",
+    "name": "SQL injection via page-builder orderBy/columns",
+    "expected": "ignored; Users intact",
+    "actual": "200; users=3",
+    "pass": true,
+    "note": ""
+  },
+  {
+    "id": "RT-063",
+    "story": "G",
+    "name": "Negative limit handled",
+    "expected": "200/400",
+    "actual": "500",
+    "pass": false,
+    "note": ""
+  },
+  {
+    "id": "RT-064",
+    "story": "G",
+    "name": "Script payload stored verbatim (relies on React escaping)",
+    "expected": "stored as text",
+    "actual": "200 name=\"<img src=x onerror=alert(1)>\"",
+    "pass": true,
+    "note": "no server-side sanitising; safe only while every renderer escapes"
+  },
+  {
+    "id": "RT-065",
+    "story": "G",
+    "name": "Orders-only user cannot read employee/attendance data via page builder",
+    "expected": "403",
+    "actual": "attendance API 403; builder employees rows 200 (2 rows), attendance rows 200 (2 rows)",
+    "pass": false,
+    "note": "DATA EXPOSURE: builder data sources ignore area permissions"
+  },
+  {
+    "id": "RT-066",
+    "story": "E",
+    "name": "\"Mark Paid\" (frontend payload) keeps allowances/deductions and sets paid",
+    "expected": "overtime 1500, deductions 300, status paid",
+    "actual": "overtime 0, deductions 0, status pending",
+    "pass": false,
+    "note": "Mark Paid zeroes components; status not stored"
+  },
+  {
+    "id": "RT-067",
+    "story": "G",
+    "name": "Custom value write requires an authoring permission",
+    "expected": "401/403",
+    "actual": "404 Unknown custom column for this source",
+    "pass": false,
+    "note": "note: sales token is deactivated by now; see static finding"
+  },
+  {
+    "id": "RT-068",
+    "story": "G",
+    "name": "Downstream service up: costing reachable",
+    "expected": "200",
+    "actual": "200",
+    "pass": true,
+    "note": ""
+  }
+]

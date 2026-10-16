@@ -1,0 +1,55 @@
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #333333;
+}
+
+.pager-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pager-buttons button {
+  min-width: 36px;
+  padding: 6px 10px;
+  border: 1px solid #c9d3de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0A2540;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pager-buttons button:hover:not(:disabled) {
+  border-color: #E85D26;
+  color: #E85D26;
+}
+
+.pager-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pager-page {
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.pager-search {
+  min-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid #c9d3de;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.pager-search:focus {
+  outline: 2px solid #E85D26;
+  outline-offset: 1px;
+}
