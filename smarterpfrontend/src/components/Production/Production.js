@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { productionAPI } from '../../services/api';
 import { formatNumber, formatPercent, formatDate, formatMoney, errorMessage, todayIST } from '../../utils/format';
 import PlanningDashboard from '../ProductionPlanning/PlanningDashboard';
 import QualityDashboard from '../QualityManagement/QualityDashboard';
+import Drawer from '../common/Drawer';
+import RowMenu from '../common/RowMenu';
 import './Production.css';
 
 const EMPTY_LIST = [];
 const PRIORITIES = ['High', 'Medium', 'Low'];
 const STATUS_LABEL = { Pending: 'Pending', InProgress: 'In progress', Completed: 'Completed' };
-const STATUS_FILTERS = [
-  ['all', 'All'], ['Pending', 'Pending'], ['InProgress', 'In progress'],
-  ['Completed', 'Completed'], ['overdue', 'Overdue']
-];
 
 /**
  * Loads one resource. `data` stays null until the first success, so a screen
@@ -138,11 +137,7 @@ const NewOrderForm = ({ onCreated, onCancel }) => {
   const describedBy = (name) => (errors[name] ? `poh-${name}-err` : undefined);
 
   return (
-    <form className="poh-panel poh-form" onSubmit={submit} noValidate>
-      <div className="poh-panel-head">
-        <h2>New production order</h2>
-        <button type="button" className="poh-btn poh-btn-ghost" onClick={onCancel} disabled={saving}>Close</button>
-      </div>
+    <form className="poh-form" onSubmit={submit} noValidate>
 
       <div className="poh-form-grid">
         <div className="poh-field poh-span-2">
@@ -332,11 +327,29 @@ const MaterialsPanel = ({ state, onRetry }) => {
 
 // --- Production order hub -------------------------------------------------------
 
+// Most urgent first: overdue, then by deadline (none last); completed at the end.
+const urgency = (o) => {
+  if (o.OrderStatus === 'Completed') return [3, 0];
+  if (isOverdue(o)) return [0, Number(o.DaysRemaining)];
+  return hasDays(o) ? [1, Number(o.DaysRemaining)] : [2, 0];
+};
+const SORTS = {
+  urgency: (a, b) => { const x = urgency(a); const y = urgency(b); return x[0] - y[0] || x[1] - y[1]; },
+  order: (a, b) => lower(a.OrderCode).localeCompare(lower(b.OrderCode)),
+  client: (a, b) => lower(a.ClientName).localeCompare(lower(b.ClientName)),
+  progress: (a, b) => num(a.CompletionPercentage) - num(b.CompletionPercentage),
+  deadline: (a, b) => (day(a.DeadlineDate) || '9999').localeCompare(day(b.DeadlineDate) || '9999'),
+  priority: (a, b) => ({ high: 0, medium: 1, low: 2 }[lower(a.Priority)] ?? 3) - ({ high: 0, medium: 1, low: 2 }[lower(b.Priority)] ?? 3)
+};
+const dueSoon = (o) => o.OrderStatus !== 'Completed' && hasDays(o) && Number(o.DaysRemaining) >= 0 && Number(o.DaysRemaining) <= 7;
+
 const Production = () => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState('orders');
   const [orders, loadOrders] = useResource(productionAPI.getOrders, EMPTY_LIST, 'production orders');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState({ key: 'urgency', dir: 'asc' });
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState(null);
   const [materials, setMaterials] = useState({ orderId: null, data: null, error: null, loading: false });
@@ -363,7 +376,7 @@ const Production = () => {
     setShowForm(false);
     setNotice({
       type: 'success',
-      text: `Production order ${orderCode || ''} created${salesOrderId ? ` for sales order #${salesOrderId}` : ''}.`
+      text: `Production order ${orderCode || ''} created${salesOrderId ? ` for sales order #${salesOrderId}` : ''}. Allocate a machine to it on the Planning board.`
     });
     loadOrders();
   };
@@ -375,23 +388,53 @@ const Production = () => {
     const planned = active.reduce((s, o) => s + num(o.TotalQuantity), 0);
     const done = active.reduce((s, o) => s + num(o.CompletedQuantity), 0);
     return {
+      all: list.length,
       active: active.length,
+      pending: list.filter(o => o.OrderStatus === 'Pending').length,
+      inProgress: list.filter(o => o.OrderStatus === 'InProgress').length,
+      completed: list.filter(o => o.OrderStatus === 'Completed').length,
       overdue: list.filter(isOverdue).length,
+      dueSoon: list.filter(dueSoon).length,
       planned,
       done,
       pct: planned > 0 ? (done / planned) * 100 : null
     };
   }, [list]);
 
+  const FILTERS = [
+    ['active', 'Active', stats?.active], ['Pending', 'Not started', stats?.pending], ['InProgress', 'In progress', stats?.inProgress],
+    ['overdue', 'Overdue', stats?.overdue], ['due-soon', 'Due in 7 days', stats?.dueSoon], ['Completed', 'Completed', stats?.completed],
+    ['all', 'All', stats?.all]
+  ];
+  const matches = (o) => {
+    switch (statusFilter) {
+      case 'all': return true;
+      case 'active': return o.OrderStatus !== 'Completed';
+      case 'overdue': return isOverdue(o);
+      case 'due-soon': return dueSoon(o);
+      default: return o.OrderStatus === statusFilter;
+    }
+  };
+
   const visible = useMemo(() => {
     if (!list) return [];
     const q = search.trim().toLowerCase();
-    return list.filter(o => {
-      if (statusFilter === 'overdue' ? !isOverdue(o) : statusFilter !== 'all' && o.OrderStatus !== statusFilter) return false;
-      if (!q) return true;
-      return [o.OrderCode, o.ClientName, o.StyleName].some(v => lower(v).includes(q));
-    });
-  }, [list, statusFilter, search]);
+    const rows = list.filter(o => matches(o) && (!q || [o.OrderCode, o.ClientName, o.StyleName, o.SalesOrderID && `so #${o.SalesOrderID}`].some(v => lower(v).includes(q))));
+    const cmp = SORTS[sort.key] || SORTS.urgency;
+    return rows.sort((a, b) => (sort.dir === 'asc' ? cmp(a, b) : cmp(b, a)) || SORTS.urgency(a, b));
+  }, [list, statusFilter, search, sort]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleSort = (key) => setSort(s => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  const SortHead = ({ k, children, className = '' }) => {
+    const active = sort.key === k;
+    return (
+      <th scope="col" className={className} aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+        <button type="button" className={`poh-sort ${active ? 'active' : ''}`} onClick={() => toggleSort(k)}>
+          {children}<span aria-hidden="true">{active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ' ↕'}</span>
+        </button>
+      </th>
+    );
+  };
 
   const renderOrders = () => {
     if (list === null) {
@@ -402,8 +445,9 @@ const Production = () => {
     if (list.length === 0) {
       return (
         <div className="poh-empty">
-          <p>No production orders yet.</p>
+          <p><strong>No production orders yet.</strong></p>
           <p className="poh-muted">Create one from a confirmed sales order, or for a client directly.</p>
+          <button type="button" className="poh-btn poh-btn-primary" onClick={() => setShowForm(true)}>+ New production order</button>
         </div>
       );
     }
@@ -411,11 +455,16 @@ const Production = () => {
 
     return (
       <div className="poh-table-wrap">
-        <table className="poh-table">
+        <table className="poh-table poh-orders">
           <thead>
             <tr>
-              <th>Order</th><th>Client</th><th>Style</th><th className="num">Qty</th><th className="num">Done</th>
-              <th>Progress</th><th>Deadline</th><th>Priority</th><th>Status</th><th><span className="poh-sr">Actions</span></th>
+              <SortHead k="order">Order</SortHead>
+              <SortHead k="client">Client / style</SortHead>
+              <SortHead k="progress">Progress</SortHead>
+              <SortHead k="deadline">Deadline</SortHead>
+              <SortHead k="priority">Priority</SortHead>
+              <th scope="col">Status</th>
+              <th scope="col"><span className="poh-sr">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -423,40 +472,55 @@ const Production = () => {
               const pct = o.CompletionPercentage === null || o.CompletionPercentage === undefined ? null : num(o.CompletionPercentage);
               const open = materials.orderId === o.OrderID;
               const overdue = isOverdue(o);
+              const done = o.OrderStatus === 'Completed';
+              const more = [
+                { key: 'materials', label: open ? 'Hide materials' : 'Check materials', run: () => toggleMaterials(o.OrderID) },
+                ...(!done ? [{ key: 'plan', label: 'Allocate a machine (Planning board)', run: () => setTab('planning') }] : []),
+                ...(o.SalesOrderID ? [{ key: 'so', label: `Open sales order #${o.SalesOrderID}`, run: () => navigate('/orders') }] : [])
+              ];
               return (
                 <React.Fragment key={o.OrderID}>
-                  <tr className={overdue ? 'poh-row-overdue' : ''}>
-                    <td><strong>{o.OrderCode}</strong>{o.SalesOrderID ? <span className="poh-sub">SO #{o.SalesOrderID}</span> : null}</td>
-                    <td>{o.ClientName || '—'}</td>
-                    <td>{o.StyleName}</td>
-                    <td className="num">{formatNumber(o.TotalQuantity, { decimals: 0 })}</td>
-                    <td className="num">{formatNumber(o.CompletedQuantity, { decimals: 0 })}</td>
-                    <td>
+                  <tr className={`${overdue ? 'poh-row-overdue' : ''} ${open ? 'poh-row-open' : ''}`}>
+                    <td className="poh-cell-order">
+                      <strong>{o.OrderCode}</strong>
+                      <span className="poh-sub">{o.SalesOrderID ? `Sales order #${o.SalesOrderID}` : 'Direct order'}</span>
+                    </td>
+                    <td className="poh-cell-client">
+                      <span className="poh-client">{o.ClientName || '—'}</span>
+                      <span className="poh-sub">{o.StyleName}</span>
+                    </td>
+                    <td className="poh-cell-progress">
+                      <div className="poh-progress-line">
+                        <strong>{formatNumber(o.CompletedQuantity, { decimals: 0 })}</strong>
+                        <span> / {formatNumber(o.TotalQuantity, { decimals: 0 })} pcs</span>
+                        <span className="poh-pct">{formatPercent(pct)}</span>
+                      </div>
                       <div className="poh-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100}
                            aria-valuenow={pct === null ? undefined : Math.min(100, pct)} aria-label={`${o.OrderCode} progress`}>
                         {/* Over-production can exceed 100%; the bar is capped, the label is not. */}
-                        <div className="poh-progress-fill" style={{ width: `${Math.max(0, Math.min(100, pct ?? 0))}%` }} />
+                        <div className={`poh-progress-fill ${done ? 'done' : ''}`} style={{ width: `${Math.max(0, Math.min(100, pct ?? 0))}%` }} />
                       </div>
-                      <span className="poh-sub">{formatPercent(pct)}</span>
                     </td>
-                    <td>
-                      {formatDate(day(o.DeadlineDate))}
-                      {daysText(o) && <span className={`poh-sub ${overdue ? 'poh-text-danger' : ''}`}>{daysText(o)}</span>}
+                    <td className="poh-cell-deadline">
+                      <span className="poh-date">{formatDate(day(o.DeadlineDate))}</span>
+                      {daysText(o) && <span className={`poh-sub ${overdue ? 'poh-text-danger' : dueSoon(o) ? 'poh-text-warn' : ''}`}>{daysText(o)}</span>}
                     </td>
                     <td><span className={`poh-pill poh-priority-${lower(o.Priority)}`}>{o.Priority || '—'}</span></td>
                     <td><span className={`poh-pill poh-status-${lower(o.OrderStatus)}`}>{STATUS_LABEL[o.OrderStatus] || o.OrderStatus || '—'}</span></td>
-                    <td>
-                      <button type="button" className="poh-btn poh-btn-small poh-btn-secondary"
-                              aria-expanded={open} onClick={() => toggleMaterials(o.OrderID)}
-                              disabled={open && materials.loading}>
-                        {open ? 'Hide materials' : 'Materials'}
-                      </button>
+                    <td className="poh-cell-actions">
+                      <div className="poh-actions">
+                        <button type="button" className="poh-act" aria-expanded={open} onClick={() => toggleMaterials(o.OrderID)}
+                                disabled={open && materials.loading} aria-label={`${open ? 'Hide' : 'Check'} materials for ${o.OrderCode}`}>
+                          {open ? 'Hide' : 'Materials'}
+                        </button>
+                        <RowMenu label={`More actions for ${o.OrderCode}`} items={more} />
+                      </div>
                     </td>
                   </tr>
                   {open && (
                     <tr className="poh-detail-row">
-                      <td colSpan={10}>
-                        <h3 className="poh-detail-title">Materials for {o.OrderCode}</h3>
+                      <td colSpan={7}>
+                        <h3 className="poh-detail-title">Materials for {o.OrderCode} · {o.StyleName}</h3>
                         <MaterialsPanel state={materials} onRetry={() => loadMaterials(o.OrderID)} />
                       </td>
                     </tr>
@@ -470,26 +534,49 @@ const Production = () => {
     );
   };
 
+  const card = ({ label, value, sub, tone, filter, bar }) => {
+    const body = (
+      <>
+        <span className="poh-card-label">{label}</span>
+        <span className="poh-card-value">{value}</span>
+        {bar !== undefined && (
+          <span className="poh-card-bar" aria-hidden="true"><span style={{ width: `${Math.max(0, Math.min(100, bar || 0))}%` }} /></span>
+        )}
+        {sub && <span className="poh-card-sub">{sub}</span>}
+      </>
+    );
+    return filter ? (
+      <button type="button" key={label} className={`poh-card clickable ${tone || ''} ${statusFilter === filter ? 'active' : ''}`}
+              onClick={() => setStatusFilter(filter)} aria-pressed={statusFilter === filter} title="Click to filter the list">{body}</button>
+    ) : <div key={label} className={`poh-card ${tone || ''}`}>{body}</div>;
+  };
+  const n = (v) => (stats ? formatNumber(v, { decimals: 0 }) : '—');
+
   return (
     <div className="poh">
       <header className="poh-header">
         <div>
           <h1>Production</h1>
-          <p>Production orders, the machine planning board and quality inspection.</p>
+          <p>Production orders, machine planning and quality inspection, from cutting to finished goods.</p>
         </div>
+        {tab === 'orders' && (
+          <button type="button" className="poh-btn poh-btn-primary poh-btn-lg" onClick={() => { setNotice(null); setShowForm(true); }}>
+            + New production order
+          </button>
+        )}
       </header>
 
       <div className="poh-tabs" role="tablist" aria-label="Production sections">
-        {[['orders', 'Production orders'], ['planning', 'Planning board'], ['quality', 'Quality']].map(([id, label]) => (
+        {[['orders', 'Production orders', stats?.active], ['planning', 'Planning board'], ['quality', 'Quality inspection']].map(([id, label, count]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id}
                   className={`poh-tab ${tab === id ? 'active' : ''}`} onClick={() => setTab(id)}>
-            {label}
+            {label}{count ? <span className="poh-tab-count">{count}</span> : null}
           </button>
         ))}
       </div>
 
-      {tab === 'planning' && <PlanningDashboard embedded />}
-      {tab === 'quality' && <QualityDashboard embedded />}
+      {tab === 'planning' && <div className="poh-embedded"><PlanningDashboard embedded /></div>}
+      {tab === 'quality' && <div className="poh-embedded"><QualityDashboard embedded /></div>}
 
       {tab === 'orders' && (
         <>
@@ -501,45 +588,39 @@ const Production = () => {
           )}
 
           <div className="poh-cards">
-            <div className="poh-card">
-              <span className="poh-card-label">Active orders</span>
-              <span className="poh-card-value">{stats ? formatNumber(stats.active, { decimals: 0 }) : '—'}</span>
-            </div>
-            <div className={`poh-card ${stats?.overdue ? 'poh-card-danger' : ''}`}>
-              <span className="poh-card-label">Overdue</span>
-              <span className="poh-card-value">{stats ? formatNumber(stats.overdue, { decimals: 0 }) : '—'}</span>
-            </div>
-            <div className="poh-card poh-card-wide">
-              <span className="poh-card-label">Pieces completed / planned (active orders)</span>
-              <span className="poh-card-value">
-                {stats ? `${formatNumber(stats.done, { decimals: 0 })} / ${formatNumber(stats.planned, { decimals: 0 })}` : '—'}
-              </span>
-              {stats && <span className="poh-sub">{formatPercent(stats.pct)} complete</span>}
-            </div>
+            {card({ label: 'Active orders', value: n(stats?.active), sub: 'Not yet completed', filter: 'active' })}
+            {card({ label: 'In progress', value: n(stats?.inProgress), sub: 'Output being recorded', filter: 'InProgress' })}
+            {card({ label: 'Not started', value: n(stats?.pending), sub: 'Waiting for a machine', filter: 'Pending' })}
+            {card({ label: 'Overdue', value: n(stats?.overdue), sub: 'Past the deadline', tone: stats?.overdue ? 'danger' : '', filter: 'overdue' })}
+            {card({ label: 'Due in 7 days', value: n(stats?.dueSoon), sub: 'Deadline this week', tone: stats?.dueSoon ? 'warn' : '', filter: 'due-soon' })}
+            {card({
+              label: 'Pieces completed', tone: 'accent',
+              value: stats ? `${formatNumber(stats.done, { decimals: 0 })} / ${formatNumber(stats.planned, { decimals: 0 })}` : '—',
+              bar: stats?.pct ?? 0, sub: stats ? `${formatPercent(stats.pct)} of active orders` : null
+            })}
           </div>
 
-          {showForm && <NewOrderForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />}
-
-          <section className="poh-panel">
-            <div className="poh-toolbar">
-              <div className="poh-field poh-inline">
-                <label htmlFor="poh-filter">Status</label>
-                <select id="poh-filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                  {STATUS_FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </div>
-              <div className="poh-field poh-inline poh-grow">
-                <label htmlFor="poh-search">Search</label>
-                <input id="poh-search" type="search" placeholder="Order code, client or style" value={search}
+          <section className="poh-panel poh-list">
+            <div className="poh-list-head">
+              <h2>Production orders <span className="poh-count">{formatNumber(visible.length, { decimals: 0 })}</span></h2>
+              <div className="poh-toolbar">
+                <label htmlFor="poh-search" className="poh-sr">Search production orders</label>
+                <input id="poh-search" className="poh-search" type="search" placeholder="Order, client, style or SO number" value={search}
                        onChange={e => setSearch(e.target.value)} />
-              </div>
-              <button type="button" className="poh-btn poh-btn-secondary" onClick={loadOrders} disabled={orders.loading}>
-                {orders.loading ? 'Refreshing…' : 'Refresh'}
-              </button>
-              {!showForm && (
-                <button type="button" className="poh-btn poh-btn-primary" onClick={() => { setNotice(null); setShowForm(true); }}>
-                  New production order
+                <button type="button" className="poh-btn poh-btn-secondary" onClick={loadOrders} disabled={orders.loading}>
+                  {orders.loading ? 'Refreshing…' : 'Refresh'}
                 </button>
+              </div>
+            </div>
+            <div className="poh-filters" role="group" aria-label="Filter by status">
+              {FILTERS.map(([v, l, c]) => (
+                <button key={v} type="button" className={`poh-chip ${statusFilter === v ? 'active' : ''} ${v === 'overdue' && c ? 'danger' : ''}`}
+                        aria-pressed={statusFilter === v} onClick={() => setStatusFilter(v)}>
+                  {l}{c !== undefined && c !== null && <span className="poh-chip-count">{c}</span>}
+                </button>
+              ))}
+              {sort.key !== 'urgency' && (
+                <button type="button" className="poh-link" onClick={() => setSort({ key: 'urgency', dir: 'asc' })}>Sort by urgency</button>
               )}
             </div>
 
@@ -549,6 +630,12 @@ const Production = () => {
             )}
             {renderOrders()}
           </section>
+
+          {showForm && (
+            <Drawer title="New production order" subtitle="Plan pieces of a style for a sales order or a client" onClose={() => setShowForm(false)} width={640}>
+              <NewOrderForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
+            </Drawer>
+          )}
         </>
       )}
     </div>

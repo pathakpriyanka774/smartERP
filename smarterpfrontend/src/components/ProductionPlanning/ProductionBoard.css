@@ -79,3 +79,14 @@
 }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* Machine card details */
+.prb-machine-head { align-items: flex-start; }
+.prb-machine-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.prb-machine-code { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #c94c1c; }
+.prb-machine-title strong { font-size: 15.5px; color: #0A2540; line-height: 1.25; }
+.prb-machine-assign {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 8px 10px; border-radius: 8px; background: #f3f6f9; font-size: 13.5px; color: #1f2a37;
+}
+.prb-assign-label { display: inline-block; min-width: 78px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: #5b6b7c; }

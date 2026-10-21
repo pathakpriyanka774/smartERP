@@ -3,6 +3,9 @@ import { productionAPI } from '../../services/api';
 import { formatNumber, formatDate, errorMessage } from '../../utils/format';
 import './ProductionBoard.css';
 
+// "InProgress" → "In progress", "ReadyForInspection" → "Ready for inspection".
+const statusText = (v) => (v ? String(v).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^(\w)(.*)$/, (m, a, b) => a + b.toLowerCase()) : '—');
+
 /**
  * Planning board: machines, allocations, today's targets and output.
  *
@@ -156,11 +159,19 @@ const PlanningDashboard = ({ embedded = false }) => {
             {data.machineStatus.map(mc => (
               <div className="prb-machine" key={mc.MachineID}>
                 <div className="prb-machine-head">
-                  <strong>{mc.MachineCode} · {mc.MachineName}</strong>
+                  <div className="prb-machine-title">
+                    <span className="prb-machine-code">{mc.MachineCode}</span>
+                    <strong>{mc.MachineName}</strong>
+                  </div>
                   <span className={badge(mc.Status)}>{mc.Status}</span>
                 </div>
                 <span className="prb-muted">{mc.MachineType} · {mc.Location || '—'}</span>
-                {mc.AssignedEmployee && <span>{mc.AssignedEmployee} on {mc.CurrentOrder} ({mc.ShiftTime})</span>}
+                {mc.AssignedEmployee && (
+                  <div className="prb-machine-assign">
+                    <span><span className="prb-assign-label">Operator</span> {mc.AssignedEmployee}</span>
+                    <span><span className="prb-assign-label">Order</span> {mc.CurrentOrder} · {mc.ShiftTime} shift</span>
+                  </div>
+                )}
 
                 <div className="prb-machine-actions">
                   {mc.Status === 'Available' && (
@@ -250,7 +261,7 @@ const PlanningDashboard = ({ embedded = false }) => {
                       <td>{t.StyleName}</td>
                       <td className="prb-num">{formatNumber(t.TargetPieces, { decimals: 0 })}</td>
                       <td className="prb-num">{formatNumber(t.CompletedPieces, { decimals: 0 })}</td>
-                      <td><span className={badge(t.Status)}>{t.Status}</span></td>
+                      <td><span className={badge(t.Status)}>{statusText(t.Status)}</span></td>
                       <td>
                         {remaining > 0 ? (
                           <div className="prb-inline">
@@ -282,7 +293,7 @@ const PlanningDashboard = ({ embedded = false }) => {
                   <tr key={i}>
                     <td>{r.EmployeeName}</td><td>{r.MachineName}</td><td>{r.OrderCode}</td><td>{r.StyleName}</td>
                     <td className="prb-num">{formatNumber(r.TotalPieces, { decimals: 0 })}</td>
-                    <td><span className={badge(r.QualityStatus)}>{r.QualityStatus}</span></td>
+                    <td><span className={badge(r.QualityStatus)}>{statusText(r.QualityStatus)}</span></td>
                   </tr>
                 ))}
               </tbody>
