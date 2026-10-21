@@ -22,8 +22,16 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('./smarterpbackend/node_modules/pg');
 
-require('./smarterpbackend/node_modules/dotenv')
-    .config({ path: path.join(__dirname, 'smarterpbackend', '.env'), quiet: true });
+require('./smarterpbackend/node_modules/dotenv').config({
+    path: [
+        path.join(__dirname, '.env.local'),
+        path.join(__dirname, '.env'),
+        path.join(__dirname, 'smarterpbackend', '.env')
+    ],
+    quiet: true
+});
+
+const databaseUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 
 const SCHEMA_DIR = path.join(__dirname, 'postgres');
 const MIGRATIONS_DIR = path.join(SCHEMA_DIR, 'migrations');
@@ -35,13 +43,17 @@ const MIGRATIONS = fs.existsSync(MIGRATIONS_DIR)
     : [];
 
 const baseConfig = {
-    host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 5432,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    ssl: process.env.DB_SSL === 'true'
-        ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
-        : false,
+    ...(databaseUrl
+        ? { connectionString: databaseUrl }
+        : {
+            host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
+            port: parseInt(process.env.DB_PORT) || 5432,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            ssl: process.env.DB_SSL === 'true'
+                ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+                : false
+        }),
     // Matches shared/database.js, so column defaults seed the same values.
     options: '-c TimeZone=UTC'
 };
@@ -104,7 +116,7 @@ const applyFile = async (client, dir, file, recordAs) => {
 };
 
 (async () => {
-    if (!process.env.DB_USER) {
+    if (!databaseUrl && !process.env.DB_USER) {
         console.error('❌ DB_USER not set. Copy smarterpbackend/.env.example to .env first.');
         process.exit(1);
     }
@@ -113,8 +125,10 @@ const applyFile = async (client, dir, file, recordAs) => {
         console.error('   Take a backup first (node scripts/backup-database.js), then re-run with --fresh --confirm-wipe.');
         process.exit(1);
     }
-    const dbName = process.env.DB_DATABASE || 'smarterp';
-    await ensureDatabase(dbName);
+    const dbName = process.env.DB_DATABASE || (databaseUrl
+        ? decodeURIComponent(new URL(databaseUrl).pathname.slice(1))
+        : 'smarterp');
+    if (!databaseUrl) await ensureDatabase(dbName);
 
     const client = new Client({ ...baseConfig, database: dbName });
     await client.connect();

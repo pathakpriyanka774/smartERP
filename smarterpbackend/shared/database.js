@@ -28,7 +28,14 @@ const fs = require('fs');
 const path = require('path');
 const { AsyncLocalStorage } = require('async_hooks');
 const pg = require('pg');
-require('dotenv').config({ quiet: true });
+require('dotenv').config({
+  path: [
+    path.resolve(__dirname, '../../.env.local'),
+    path.resolve(__dirname, '../../.env'),
+    path.resolve(__dirname, '../.env')
+  ],
+  quiet: true
+});
 
 // --- Value conversion ---------------------------------------------------------
 
@@ -362,12 +369,16 @@ sql.Transaction = Transaction;
 // --- Pool ---------------------------------------------------------------------
 
 const buildConfig = () => ({
-  host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_DATABASE,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false,
+  ...(process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL }
+    : {
+        host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
+        port: parseInt(process.env.DB_PORT) || 5432,
+        database: process.env.DB_DATABASE,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false
+      }),
   max: parseInt(process.env.DB_POOL_MAX) || 10,
   // CURRENT_DATE and LOCALTIMESTAMP (the column defaults) are evaluated in UTC,
   // as GETDATE() was in the SQL Server container. Local wall-clock values are

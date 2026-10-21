@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Microservices backend for ERP system",
   "scripts": {
+    "start:pm2": "pm2-runtime ecosystem.config.cjs",
+  "start:pm2:local": "pm2 start ecosystem.config.cjs",
+  "monitor": "pm2 monit",
+  "logs": "pm2 logs",
     "start:gateway": "node gateway/server.js",
     "start:auth": "node services/auth-service/server.js",
     "start:orders": "node services/order-service/server.js",
@@ -32,7 +36,8 @@
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.9",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "pm2": "^7.1.0"
   },
   "keywords": [
     "erp",
