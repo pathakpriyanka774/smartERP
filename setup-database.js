@@ -31,7 +31,11 @@ require('./smarterpbackend/node_modules/dotenv').config({
     quiet: true
 });
 
-const databaseUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
+// Local PostgreSQL unless DB_TARGET=remote (or running on Render): see
+// smarterpbackend/shared/db-target.js. Migrations use the unpooled Neon URL.
+const { connectionConfig, databaseName, describeTarget } = require('./smarterpbackend/shared/db-target');
+const connection = connectionConfig({ unpooled: true });
+const databaseUrl = connection.connectionString;
 
 const SCHEMA_DIR = path.join(__dirname, 'postgres');
 const MIGRATIONS_DIR = path.join(SCHEMA_DIR, 'migrations');
@@ -43,17 +47,7 @@ const MIGRATIONS = fs.existsSync(MIGRATIONS_DIR)
     : [];
 
 const baseConfig = {
-    ...(databaseUrl
-        ? { connectionString: databaseUrl }
-        : {
-            host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
-            port: parseInt(process.env.DB_PORT) || 5432,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            ssl: process.env.DB_SSL === 'true'
-                ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
-                : false
-        }),
+    ...connection,
     // Matches shared/database.js, so column defaults seed the same values.
     options: '-c TimeZone=UTC'
 };
@@ -125,9 +119,9 @@ const applyFile = async (client, dir, file, recordAs) => {
         console.error('   Take a backup first (node scripts/backup-database.js), then re-run with --fresh --confirm-wipe.');
         process.exit(1);
     }
-    const dbName = process.env.DB_DATABASE || (databaseUrl
-        ? decodeURIComponent(new URL(databaseUrl).pathname.slice(1))
-        : 'smarterp');
+    // A URL names its own database; DB_DATABASE describes the local one only.
+    const dbName = databaseName(connection) || 'smarterp';
+    console.log(`🎯 Database: ${describeTarget(connection)}`);
     if (!databaseUrl) await ensureDatabase(dbName);
 
     const client = new Client({ ...baseConfig, database: dbName });
@@ -178,6 +172,12 @@ const applyFile = async (client, dir, file, recordAs) => {
         await client.end();
     }
 })().catch(err => {
-    console.error('\n❌ Setup failed:', err.message);
+    // Network errors can carry an empty message; the code (ECONNRESET...) is what says what happened.
+    console.error('\n❌ Setup failed:', err.message || err.code || String(err));
+    if (databaseUrl && ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED'].includes(err.code)) {
+        console.error('   Could not reach the hosted database. Some office networks and VPNs block');
+        console.error('   PostgreSQL (port 5432): try another network, or run without DB_TARGET=remote');
+        console.error('   to use the local database.');
+    }
     process.exit(1);
 });

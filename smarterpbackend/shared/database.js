@@ -28,6 +28,7 @@ const fs = require('fs');
 const path = require('path');
 const { AsyncLocalStorage } = require('async_hooks');
 const pg = require('pg');
+const { dbTarget, connectionConfig, describeTarget } = require('./db-target');
 require('dotenv').config({
   path: [
     path.resolve(__dirname, '../../.env.local'),
@@ -369,36 +370,13 @@ sql.Transaction = Transaction;
 // --- Pool ---------------------------------------------------------------------
 
 const buildConfig = () => ({
-  ...(process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL }
-    : {
-        host: process.env.DB_HOST || process.env.DB_SERVER || 'localhost',
-        port: parseInt(process.env.DB_PORT) || 5432,
-        database: process.env.DB_DATABASE,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' } : false
-      }),
+  ...connectionConfig(),
   max: parseInt(process.env.DB_POOL_MAX) || 10,
   // CURRENT_DATE and LOCALTIMESTAMP (the column defaults) are evaluated in UTC,
   // as GETDATE() was in the SQL Server container. Local wall-clock values are
   // derived in the application: see shared/app-time.js.
   options: '-c TimeZone=UTC'
 });
-
-/** host:port/database the pool will use, without credentials, for log messages. */
-const describeTarget = () => {
-  if (process.env.DATABASE_URL) {
-    try {
-      const url = new URL(process.env.DATABASE_URL);
-      return `DATABASE_URL -> ${url.hostname}:${url.port || 5432}${url.pathname}`;
-    } catch {
-      return 'DATABASE_URL (unparseable)';
-    }
-  }
-  const host = process.env.DB_HOST || process.env.DB_SERVER || 'localhost';
-  return `DB_HOST -> ${host}:${parseInt(process.env.DB_PORT) || 5432}/${process.env.DB_DATABASE || ''}`;
-};
 
 /**
  * A connection error's message. Connecting to a host with several addresses
@@ -413,8 +391,8 @@ const describeError = (error) => {
 let pool;
 let connecting = null;
 
-if (!process.env.DATABASE_URL && !process.env.DB_HOST && !process.env.DB_SERVER) {
-  console.warn('⚠️  Neither DATABASE_URL nor DB_HOST is set: connecting to PostgreSQL on localhost.');
+if (dbTarget() === 'local' && !process.env.DB_HOST && !process.env.DB_SERVER) {
+  console.warn('⚠️  DB_HOST is not set: connecting to PostgreSQL on localhost.');
 }
 
 /** Connect once; concurrent callers share the same attempt, and a failed attempt can be retried. */
@@ -443,7 +421,7 @@ const openPool = async () => {
     transaction: () => new Transaction(pool),
     close: () => pgPool.end()
   };
-  console.log('✅ Connected to PostgreSQL');
+  console.log(`✅ Connected to PostgreSQL (${describeTarget()})`);
   return pool;
 };
 
