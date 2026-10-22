@@ -7,7 +7,13 @@ const { AREA_PERMISSIONS } = require('../shared/permissions');
 const app = express();
 const PORT = 8000;
 
-app.use(cors());
+// Only the SmartERP frontend may call the API from a browser. CORS_ORIGINS is a
+// comma-separated list; requests with no Origin (curl, server-to-server) are
+// unaffected, since CORS is enforced by browsers only.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'https://smarterpfrontend.vercel.app,http://localhost:3000')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 
 // Deliberately no express.json() here. The gateway only forwards requests, and
 // parsing the body would consume the request stream, so proxied POST/PUT bodies
@@ -129,6 +135,11 @@ Object.keys(services).forEach(serviceName => {
       console.log(`📡 Proxying: ${req.method} /api/${serviceName}${req.path}`);
     },
     onProxyRes: (proxyRes, req, res) => {
+      // The services send their own permissive CORS headers; the gateway's
+      // policy above is the one the browser should see.
+      Object.keys(proxyRes.headers)
+        .filter(h => h.startsWith('access-control-'))
+        .forEach(h => delete proxyRes.headers[h]);
       console.log(`✅ Response from ${serviceName}: ${proxyRes.statusCode}`);
     }
   }));

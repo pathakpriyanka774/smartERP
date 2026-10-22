@@ -34,7 +34,7 @@ import { landingPath } from './config/menuConfig';
 
 function App() {
     const [user, setUser] = useState(null);
-    const [authMode, setAuthMode] = useState('login');
+    const [, setAuthMode] = useState('login');
 
     useEffect(() => {
         const stored = localStorage.getItem('currentUser');
