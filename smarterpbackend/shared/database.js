@@ -386,8 +386,36 @@ const buildConfig = () => ({
   options: '-c TimeZone=UTC'
 });
 
+/** host:port/database the pool will use, without credentials, for log messages. */
+const describeTarget = () => {
+  if (process.env.DATABASE_URL) {
+    try {
+      const url = new URL(process.env.DATABASE_URL);
+      return `DATABASE_URL -> ${url.hostname}:${url.port || 5432}${url.pathname}`;
+    } catch {
+      return 'DATABASE_URL (unparseable)';
+    }
+  }
+  const host = process.env.DB_HOST || process.env.DB_SERVER || 'localhost';
+  return `DB_HOST -> ${host}:${parseInt(process.env.DB_PORT) || 5432}/${process.env.DB_DATABASE || ''}`;
+};
+
+/**
+ * A connection error's message. Connecting to a host with several addresses
+ * (`localhost` is ::1 and 127.0.0.1) fails with an AggregateError whose own
+ * message is empty, so the per-address errors are listed instead.
+ */
+const describeError = (error) => {
+  const parts = [error.message, ...(error.errors || []).map(e => e.message)].filter(Boolean);
+  return parts.join('; ') || error.code || String(error);
+};
+
 let pool;
 let connecting = null;
+
+if (!process.env.DATABASE_URL && !process.env.DB_HOST && !process.env.DB_SERVER) {
+  console.warn('⚠️  Neither DATABASE_URL nor DB_HOST is set: connecting to PostgreSQL on localhost.');
+}
 
 /** Connect once; concurrent callers share the same attempt, and a failed attempt can be retried. */
 const connectDB = async () => {
@@ -405,7 +433,7 @@ const openPool = async () => {
     client.release();
   } catch (error) {
     await pgPool.end().catch(() => {});
-    console.error('❌ Database connection failed:', error.message);
+    console.error(`❌ Database connection failed (${describeTarget()}):`, describeError(error));
     throw error;
   }
   pool = {

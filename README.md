@@ -1,4 +1,4 @@
-# SmartERP - Complete ERP Management System
+#SmartERP - Complete ERP Management System
 
 A comprehensive Enterprise Resource Planning (ERP) system built with React.js frontend and Node.js microservices backend, designed specifically for garment manufacturing businesses.
 
