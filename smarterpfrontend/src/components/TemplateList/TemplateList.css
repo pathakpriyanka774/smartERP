@@ -15,6 +15,14 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* Previously inherited from ProductionPlanning.css while every page's CSS was
+   bundled together; pages now load their own stylesheet only. */
+.template-list-header .header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .template-list-header h2 {
   margin: 0;
   color: #333;

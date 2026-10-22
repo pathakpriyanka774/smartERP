@@ -12,16 +12,31 @@ body, html {
 .app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .main-content {
   flex: 1;
+  min-width: 0;
   padding: 30px;
   background-color: #f8f9fa;
   overflow-y: auto;
   height: 100vh;
+  height: 100dvh;
   margin-left: 280px;
+}
+
+/* App-wide; lived in Payroll.css when every page's CSS shipped together. */
+button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.page-loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
 }
 
 .content-placeholder {
@@ -41,4 +56,157 @@ body, html {
 .content-placeholder p {
   font-size: 16px;
   color: #666;
+}
+
+/* --- Small screens ------------------------------------------------------------
+   The top bar and backdrop exist only below 900px, where the sidebar turns into
+   an off-canvas menu (Sidebar.css). */
+
+.mobile-topbar,
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .main-content {
+    padding: 24px;
+    margin-left: 240px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    flex-shrink: 0;
+    padding: 0 12px;
+    background-color: #1e3a5f;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+  }
+
+  .menu-toggle {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .menu-toggle:hover,
+  .menu-toggle:focus-visible {
+    background-color: #2d4a6b;
+  }
+
+  .mobile-title {
+    font-weight: 600;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app.menu-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 999;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 16px;
+    height: auto;
+    flex: 1;
+  }
+}
+
+/* Shared fallbacks for the page stylesheets. The .app .main-content prefix
+   outranks a page's own single-class rules, which load after this file. */
+@media (max-width: 768px) {
+  /* Tables scroll sideways instead of pushing the page wider. */
+  .app .main-content [class*="table-wrap"],
+  .app .main-content .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .app .main-content :not([class*="table-wrap"], .table-container) > table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .app .main-content th,
+  .app .main-content td {
+    white-space: nowrap;
+  }
+
+  /* Headers, toolbars and filter rows wrap rather than overflow. */
+  .app .main-content [class*="header"],
+  .app .main-content [class*="toolbar"],
+  .app .main-content [class*="filters"],
+  .app .main-content [class*="actions"],
+  .app .main-content [class*="tabs"] {
+    flex-wrap: wrap;
+  }
+
+  /* 16px stops iOS Safari zooming in on focus. */
+  .app .main-content input,
+  .app .main-content select,
+  .app .main-content textarea {
+    font-size: 16px;
+    max-width: 100%;
+  }
+
+  .app .main-content img,
+  .app .main-content canvas,
+  .app .main-content svg {
+    max-width: 100%;
+  }
+
+  /* Forms stack; summary cards go two across. */
+  .app .main-content [class*="form-row"],
+  .app .main-content [class*="form-grid"] {
+    grid-template-columns: 1fr;
+  }
+
+  .app .main-content [class*="stats-grid"],
+  .app .main-content [class*="kpi-grid"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Dialogs fit the screen and scroll inside. */
+  .app .main-content .modal,
+  .app .main-content .modal-content,
+  .app .main-content .large-modal,
+  .app .main-content .acc-modal,
+  .app .main-content .pur-modal,
+  .app .main-content .inv-modal,
+  .app .main-content .preview-modal-content {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .app .main-content [class*="stats-grid"],
+  .app .main-content [class*="kpi-grid"] {
+    grid-template-columns: 1fr;
+  }
 }

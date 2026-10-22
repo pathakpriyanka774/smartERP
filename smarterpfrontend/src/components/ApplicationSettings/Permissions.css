@@ -128,3 +128,14 @@
 .btn-delete:hover {
   opacity: 0.9;
 }
+/* Five columns do not fit a phone; keep them and scroll the table sideways. */
+@media (max-width: 768px) {
+  .permissions-table {
+    overflow-x: auto;
+  }
+
+  .permissions-table .table-header,
+  .permissions-table .table-row {
+    min-width: 640px;
+  }
+}

@@ -1,40 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Sidebar from './components/Sidebar/Sidebar';
-import Dashboard from './components/Dashboard/Dashboard';
-import Orders from './components/Orders/Orders';
-import Inventory from './components/Inventory/Inventory';
-import Production from './components/Production/Production';
-import Expenses from './components/Expenses/Expenses';
-import Clients from './components/Clients/Clients';
-import Reports from './components/Reports/Reports';
-import Payroll from './components/Payroll/Payroll';
-import ApplicationSettings from './components/ApplicationSettings/ApplicationSettings';
-import UserManagement from './components/UserManagement/UserManagement';
-import TemplateBuilder from './components/TemplateBuilder/TemplateBuilder';
-import TemplateList from './components/TemplateList/TemplateList';
-import Workflows from './components/Workflows/Workflows';
 import Login from './components/Auth/Login';
 import { authAPI, clearSession } from './services/api';
 import Signup from './components/Auth/Signup';
-import PlanningDashboard from './components/ProductionPlanning/PlanningDashboard';
-import ProductionWorkerDashboard from './components/ProductionWorkflow/ProductionWorkerDashboard';
-import QualityDashboard from './components/QualityManagement/QualityDashboard';
-import StyleCosting from './components/StyleCosting/StyleCosting';
-import Attendance from './components/Attendance/Attendance';
-import CustomPage from './components/CustomPage';
 import RequirePermission from './components/RequirePermission';
-import Invoices from './components/Invoices/Invoices';
-import Purchases from './components/Purchases/Purchases';
-import Accounting from './components/Accounting/Accounting';
-import CompanySettings from './components/CompanySettings/CompanySettings';
-import AuditLog from './components/AuditLog/AuditLog';
 import { landingPath } from './config/menuConfig';
+
+// Each page is its own chunk, fetched the first time it is opened, so the
+// initial download is the shell and the login screen rather than every page.
+const Dashboard = lazy(() => import('./components/Dashboard/Dashboard'));
+const Orders = lazy(() => import('./components/Orders/Orders'));
+const Inventory = lazy(() => import('./components/Inventory/Inventory'));
+const Production = lazy(() => import('./components/Production/Production'));
+const Expenses = lazy(() => import('./components/Expenses/Expenses'));
+const Clients = lazy(() => import('./components/Clients/Clients'));
+const Reports = lazy(() => import('./components/Reports/Reports'));
+const Payroll = lazy(() => import('./components/Payroll/Payroll'));
+const ApplicationSettings = lazy(() => import('./components/ApplicationSettings/ApplicationSettings'));
+const UserManagement = lazy(() => import('./components/UserManagement/UserManagement'));
+const TemplateBuilder = lazy(() => import('./components/TemplateBuilder/TemplateBuilder'));
+const TemplateList = lazy(() => import('./components/TemplateList/TemplateList'));
+const Workflows = lazy(() => import('./components/Workflows/Workflows'));
+const PlanningDashboard = lazy(() => import('./components/ProductionPlanning/PlanningDashboard'));
+const ProductionWorkerDashboard = lazy(() => import('./components/ProductionWorkflow/ProductionWorkerDashboard'));
+const QualityDashboard = lazy(() => import('./components/QualityManagement/QualityDashboard'));
+const StyleCosting = lazy(() => import('./components/StyleCosting/StyleCosting'));
+const Attendance = lazy(() => import('./components/Attendance/Attendance'));
+const CustomPage = lazy(() => import('./components/CustomPage'));
+const Invoices = lazy(() => import('./components/Invoices/Invoices'));
+const Purchases = lazy(() => import('./components/Purchases/Purchases'));
+const Accounting = lazy(() => import('./components/Accounting/Accounting'));
+const CompanySettings = lazy(() => import('./components/CompanySettings/CompanySettings'));
+const AuditLog = lazy(() => import('./components/AuditLog/AuditLog'));
 
 function App() {
     const [user, setUser] = useState(null);
     const [, setAuthMode] = useState('login');
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // Escape closes the mobile menu, as it would any overlay.
+    useEffect(() => {
+        if (!menuOpen) return;
+        const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [menuOpen]);
 
     useEffect(() => {
         const stored = localStorage.getItem('currentUser');
@@ -97,9 +109,22 @@ function App() {
 
     return (
         <Router>
-            <div className="app">
-                <Sidebar user={user} onLogout={handleLogout} />
+            <div className={`app ${menuOpen ? 'menu-open' : ''}`}>
+                {/* Below 900px the sidebar is off-canvas; this bar opens it. */}
+                <header className="mobile-topbar">
+                    <button
+                        type="button"
+                        className="menu-toggle"
+                        aria-label="Open menu"
+                        aria-expanded={menuOpen}
+                        onClick={() => setMenuOpen(true)}
+                    >☰</button>
+                    <span className="mobile-title">StitchPro Optivise</span>
+                </header>
+                <Sidebar user={user} onLogout={handleLogout} onNavigate={() => setMenuOpen(false)} />
+                <div className="sidebar-backdrop" onClick={() => setMenuOpen(false)} />
                 <div className="main-content">
+                    <Suspense fallback={<div className="page-loading">Loading…</div>}>
                     <Routes>
                         <Route path="/" element={<Navigate to={landingPath(user) || '/dashboard'} replace />} />
                         <Route path="/dashboard" element={<RequirePermission user={user} menuKey="dashboard"><Dashboard /></RequirePermission>} />
@@ -136,6 +161,7 @@ function App() {
                         {/* Client-built pages from the Page Builder. */}
                         <Route path="/p/:pageKey" element={<CustomPage />} />
                     </Routes>
+                    </Suspense>
                 </div>
             </div>
         </Router>

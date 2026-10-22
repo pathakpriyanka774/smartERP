@@ -4,11 +4,18 @@ import './Sidebar.css';
 import { MAIN_MENU, APP_SETTINGS_MENU, canOpen } from '../../config/menuConfig';
 import { builderAPI } from '../../services/api';
 
-const Sidebar = ({ user, onLogout }) => {
+const Sidebar = ({ user, onLogout, onNavigate }) => {
     const [showAppSettings, setShowAppSettings] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    
+
+    // On a phone the sidebar is an overlay; any route change (a menu click or
+    // the back button) should put it away again.
+    useEffect(() => {
+        if (onNavigate) onNavigate();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
     const getActiveSection = () => {
         return location.pathname.substring(1) || 'dashboard';
     };

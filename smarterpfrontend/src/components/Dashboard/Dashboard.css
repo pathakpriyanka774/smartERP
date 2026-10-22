@@ -501,10 +501,16 @@
 .dash-badge.low-stock { background: #fff6e5; color: #8a5300; }
 .dash-badge.out-of-stock { background: #fdecea; color: #b3261e; }
 
+@media (max-width: 1100px) {
+  .dashboard-content { grid-template-columns: 1fr; gap: 20px; }
+  .insights-grid { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 900px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-header { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 @media (max-width: 560px) {
   .kpi-grid { grid-template-columns: 1fr; }
+  .financial-grid,
+  .insights-grid { grid-template-columns: 1fr; }
 }
